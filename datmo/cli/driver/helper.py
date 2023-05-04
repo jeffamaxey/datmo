@@ -59,8 +59,8 @@ class Helper():
     def prompt(self, msg, default=None):
         try:
             if default:
-                msg = msg + "[" + str(default) + "]"
-            msg = msg + ": "
+                msg = f"{msg}[{str(default)}]"
+            msg = f"{msg}: "
             result = input(msg)
             return result if result else default
         except EOFError:
@@ -74,15 +74,13 @@ class Helper():
         if print_format == "table":
             output = prettytable.PrettyTable(header_list)
             for item_dict in item_dict_list:
-                row_vals = []
-                for col_name in header_list:
-                    row_vals.append(item_dict.get(col_name, "N/A"))
+                row_vals = [item_dict.get(col_name, "N/A") for col_name in header_list]
                 output.add_row(row_vals)
         elif print_format == "csv":
-            output = ""
-            for idx, header in enumerate(header_list):
-                output += header if idx == len(
-                    header_list) - 1 else header + ","
+            output = "".join(
+                header if idx == len(header_list) - 1 else f"{header},"
+                for idx, header in enumerate(header_list)
+            )
             output += os.linesep
             for item_dict in item_dict_list:
                 for idx, header in enumerate(header_list):
@@ -96,14 +94,14 @@ class Helper():
 
         # Save final output to file if path given
         if output_path:
-            self.echo("Downloading output to path %s" % output_path)
+            self.echo(f"Downloading output to path {output_path}")
             with open(output_path, "wb") as f:
                 f.write(to_bytes(to_unicode(output)))
         # Print final output
         return self.echo(to_unicode(output))
 
     def prompt_bool(self, msg):
-        msg = msg + ": "
+        msg = f"{msg}: "
         val = input(msg).lower()
         return val in [
             'true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh'
@@ -126,12 +124,12 @@ class Helper():
         return val
 
     def get_command_class(self, command_name):
-        command_path = "datmo.cli.command." + command_name
+        command_path = f"datmo.cli.command.{command_name}"
         try:
             command_class = importlib.import_module(command_path)
         except ImportError:
             try:
-                command_path = "datmo.cli.command." + command_name + "_command"
+                command_path = f"datmo.cli.command.{command_name}_command"
                 command_class = importlib.import_module(command_path)
             except ImportError as ex:
                 self.echo(__("error", "cli.general", str(ex)))
@@ -167,12 +165,13 @@ class Helper():
             available_options = []
             for idx, option in enumerate(available_options_info):
                 available_options.append(option[0])
-                self.echo("(%s) %s : %s" % (idx + 1, option[0], option[1]))
+                self.echo(f"({idx + 1}) {option[0]} : {option[1]}")
         else:
             for idx, option in enumerate(available_options):
-                self.echo("(%s) %s" % (idx + 1, option))
+                self.echo(f"({idx + 1}) {option}")
         input_environment_option = self.prompt(
-            __("prompt", "cli.environment.setup.%s" % option_type))
+            __("prompt", f"cli.environment.setup.{option_type}")
+        )
         option_environment_index = None
         valid_option = False
         while input_environment_option is not None and not valid_option:
@@ -192,19 +191,22 @@ class Helper():
                     valid_option = True
                 except ValueError:
                     self.echo(
-                        __("warn",
-                           "cli.environment.setup.argument.unavailable.%s" %
-                           option_type, input_environment_option))
+                        __(
+                            "warn",
+                            f"cli.environment.setup.argument.unavailable.{option_type}",
+                            input_environment_option,
+                        )
+                    )
                     input_environment_option = self.prompt(
-                        __("prompt", "cli.environment.setup.%s" % option_type))
+                        __("prompt", f"cli.environment.setup.{option_type}")
+                    )
         if option_environment_index is not None:
             input_environment_option = available_options[
                 option_environment_index - 1]
 
         if input_environment_option is None or option_environment_index <= 0 or\
-                option_environment_index > len(available_options):
-            self.echo(
-                __("warn", "cli.environment.setup.argument.%s" % option_type))
+                    option_environment_index > len(available_options):
+            self.echo(__("warn", f"cli.environment.setup.argument.{option_type}"))
             if option_type == "type":
                 input_environment_option = "cpu"
             elif option_type == "framework":
@@ -230,12 +232,13 @@ class Helper():
         def real_decorator(function):
             def wrapper(self, *args, **kwargs):
                 controller_obj = controller_class()
-                if controller_obj.environment_driver.type == "docker":
-                    # TODO: abstract the datmo_directory_name
-                    if check_docker_inactive(controller_obj.home, ".datmo"):
-                        Helper.echo(
-                            __("error", "general.environment.docker.na"))
-                        return
+                if (
+                    controller_obj.environment_driver.type == "docker"
+                    and check_docker_inactive(controller_obj.home, ".datmo")
+                ):
+                    Helper.echo(
+                        __("error", "general.environment.docker.na"))
+                    return
                 return function(self, *args, **kwargs)
 
             return wrapper

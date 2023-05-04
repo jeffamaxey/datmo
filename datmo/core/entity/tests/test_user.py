@@ -13,7 +13,7 @@ class TestUser():
 
         for k, v in self.input_dict.items():
             assert getattr(user_entity, k) == v
-        assert user_entity.id == None
+        assert user_entity.id is None
         assert user_entity.created_at
         assert user_entity.updated_at
 

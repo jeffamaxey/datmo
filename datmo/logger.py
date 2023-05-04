@@ -37,7 +37,7 @@ class Logger():
         self.task_dir = task_dir
 
     @classmethod
-    def __save_dictionary(self, dictionary, path):
+    def __save_dictionary(cls, dictionary, path):
         json_obj = JSONStore(path)
         data = json_obj.to_dict()
         data.update(dictionary)

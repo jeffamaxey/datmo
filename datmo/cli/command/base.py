@@ -21,7 +21,6 @@ class BaseCommand(object):
             self.args = self.parser.parse_args(args)
         except SystemExit:
             self.args = True
-            pass
 
     def display_usage_message(self, args):
         """ Checks to see if --help or -h is passed in, and if so it calls our usage()
@@ -37,9 +36,7 @@ class BaseCommand(object):
             command arguments
         """
 
-        is_help = -1
-        if "--help" in args:
-            is_help = args.index("--help")
+        is_help = args.index("--help") if "--help" in args else -1
         if is_help == -1 and "-h" in args:
             is_help = args.index("-h")
 
@@ -74,11 +71,10 @@ class BaseCommand(object):
             if "subcommand" in command_args and command_args['subcommand'] is not None:
                 function_name = getattr(self.args, "subcommand",
                                         self.args.command)
-                method = getattr(self, function_name)
             else:
                 function_name = getattr(self.args, "command",
                                         self.args.command)
-                method = getattr(self, function_name)
+            method = getattr(self, function_name)
         except AttributeError:
             raise ClassMethodNotFound(
                 __("error", "cli.general.method.not_found",
@@ -95,8 +91,7 @@ class BaseCommand(object):
                 __("error", "cli.general.method.not_found",
                    (self.args.command, method)))
 
-        method_result = method(**command_args)
-        return method_result
+        return method(**command_args)
 
     def task_run_helper(self, task_dict, snapshot_dict, error_identifier, data_paths=None):
         """
@@ -129,7 +124,7 @@ class BaseCommand(object):
             if data_paths:
                 try:
                     _, _, task_dict['data_file_path_map'], task_dict['data_directory_path_map'] = \
-                        parse_paths(self.task_controller.home, data_paths, '/data')
+                            parse_paths(self.task_controller.home, data_paths, '/data')
                 except PathDoesNotExist as e:
                     status = "NOT STARTED"
                     workspace = task_dict.get('workspace', None)
@@ -150,8 +145,8 @@ class BaseCommand(object):
             self.cli_helper.echo(__("info", "cli.run.run.stop"))
         except Exception as e:
             status = "FAILED"
-            self.logger.error("%s %s" % (e, task_dict))
-            self.cli_helper.echo("%s" % e)
+            self.logger.error(f"{e} {task_dict}")
+            self.cli_helper.echo(f"{e}")
             self.cli_helper.echo(__("error", error_identifier, task_obj.id))
             return False
         finally:

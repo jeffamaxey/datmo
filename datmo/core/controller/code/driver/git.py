@@ -220,9 +220,7 @@ class GitCodeDriver(CodeDriver):
     def exists_ref(self, commit_id):
         code_ref_path = os.path.join(self.filepath, ".git/refs/datmo/",
                                      commit_id)
-        if not os.path.isfile(code_ref_path):
-            return False
-        return True
+        return bool(os.path.isfile(code_ref_path))
 
     def delete_ref(self, commit_id):
         self.ensure_code_refs_dir()
@@ -237,8 +235,7 @@ class GitCodeDriver(CodeDriver):
     def list_refs(self):
         self.ensure_code_refs_dir()
         code_refs_path = os.path.join(self.filepath, ".git/refs/datmo/")
-        code_refs_list = os.listdir(code_refs_path)
-        return code_refs_list
+        return os.listdir(code_refs_path)
 
     # Datmo specific remote calls
     # def push_ref(self, commit_id="*"):
@@ -268,9 +265,8 @@ class GitCodeDriver(CodeDriver):
     def checkout_ref(self, commit_id):
         try:
             # Run checkout for the specific ref as usual
-            datmo_ref = "refs/datmo/" + commit_id
-            checkout_result = self.checkout(datmo_ref)
-            return checkout_result
+            datmo_ref = f"refs/datmo/{commit_id}"
+            return self.checkout(datmo_ref)
         except Exception as e:
             raise GitExecutionError(
                 __("error", "controller.code.driver.git.checkout_ref",
@@ -279,10 +275,7 @@ class GitCodeDriver(CodeDriver):
     def exists_datmo_files_ignored(self):
         exclude_file = os.path.join(self.filepath, ".git/info/exclude")
         try:
-            if ".datmo" not in open(exclude_file, "r").read():
-                return False
-            else:
-                return True
+            return ".datmo" in open(exclude_file, "r").read()
         except Exception as e:
             raise FileIOError(
                 __("error", "controller.code.driver.git.ensure_code_refs_dir",
@@ -293,8 +286,7 @@ class GitCodeDriver(CodeDriver):
         try:
             if not self.exists_datmo_files_ignored():
                 with open(exclude_file, "ab") as f:
-                    f.write(
-                        to_bytes("%s.datmo/*%s" % (os.linesep, os.linesep)))
+                    f.write(to_bytes(f"{os.linesep}.datmo/*{os.linesep}"))
         except Exception as e:
             raise FileIOError(
                 __("error", "controller.code.driver.git.ensure_code_refs_dir",
@@ -314,7 +306,7 @@ class GitCodeDriver(CodeDriver):
                     __("error", "controller.code.driver.git.init",
                        str(stderr)))
             result = stdout.decode().strip()
-            return True if result else False
+            return bool(result)
         except subprocess.CalledProcessError as e:
             raise GitExecutionError(
                 __("error", "controller.code.driver.git.init", str(e)))
@@ -348,7 +340,7 @@ class GitCodeDriver(CodeDriver):
 
     def _parse_git_url(self, original_git_url, mode="https"):
         if original_git_url[-4:] != ".git":
-            original_git_url = original_git_url + ".git"
+            original_git_url = f"{original_git_url}.git"
         p = parse(original_git_url)
 
         if not p.valid:
@@ -683,7 +675,7 @@ class GitCodeDriver(CodeDriver):
             raise GitExecutionError(
                 __("error", "controller.code.driver.git.check_git_work_tree",
                    str(e)))
-        return True if git_work_tree_exists == "true" else False
+        return git_work_tree_exists == "true"
 
     # def remote(self, mode, origin, git_url):
     #     # TODO: handle multiple remote urls
@@ -811,9 +803,7 @@ class GitCodeDriver(CodeDriver):
 
     def exists_code_refs_dir(self):
         dir = ".git/refs/datmo"
-        if not os.path.isdir(os.path.join(self.filepath, dir)):
-            return False
-        return True
+        return bool(os.path.isdir(os.path.join(self.filepath, dir)))
 
     def ensure_code_refs_dir(self):
         dir = ".git/refs/datmo"
@@ -842,10 +832,7 @@ class GitCodeDriver(CodeDriver):
 class GitHostDriver(object):
     def __init__(self, home=os.path.expanduser("~"), host="github"):
         self.home = home
-        if host == "github":
-            self.host = "github.com"
-        else:
-            self.host = "unknown"
+        self.host = "github.com" if host == "github" else "unknown"
         self._ssh_enabled = self._check_for_ssh()
         self._https_enabled = self._check_https_enabled()
 
@@ -872,7 +859,7 @@ class GitHostDriver(object):
     @Config.cache_setting(
         key="git.ssh_enabled", expires_min=1440, ignore_values=[False])
     def _check_for_ssh(self):
-        cmd = "ssh-keyscan %s >> ~/.ssh/known_hosts" % (self.host)
+        cmd = f"ssh-keyscan {self.host} >> ~/.ssh/known_hosts"
         p = subprocess.Popen(
             cmd,
             shell=True,
@@ -883,7 +870,7 @@ class GitHostDriver(object):
         out, err = out.decode(), err.decode()
         if "Error" in out or "Error" in err or "denied" in err:
             self._ssh_enabled = False
-        cmd = "ssh -i %s/.ssh/id_rsa -T git@%s" % (self.home, self.host)
+        cmd = f"ssh -i {self.home}/.ssh/id_rsa -T git@{self.host}"
         p = subprocess.Popen(
             str(cmd),
             shell=True,
@@ -895,22 +882,18 @@ class GitHostDriver(object):
         error_strings = [
             "Error", "denied", "Could not resolve hostname", "not accessible"
         ]
-        for err_str in error_strings:
-            if err_str in err or err_str in out:
-                return False
-        return True
+        return not any(err_str in err or err_str in out for err_str in error_strings)
 
     def create_git_netrc(self, username, password):
         netrc_filepath = os.path.join(self.home, ".netrc")
-        netrc_file = open(netrc_filepath, "wb")
-        netrc_file.truncate()
-        netrc_file.write(to_bytes("machine %s" % (self.host)))
-        netrc_file.write(to_bytes(os.linesep))
-        netrc_file.write(to_bytes("login " + str(username)))
-        netrc_file.write(to_bytes(os.linesep))
-        netrc_file.write(to_bytes("password " + str(password)))
-        netrc_file.write(to_bytes(os.linesep))
-        netrc_file.close()
+        with open(netrc_filepath, "wb") as netrc_file:
+            netrc_file.truncate()
+            netrc_file.write(to_bytes(f"machine {self.host}"))
+            netrc_file.write(to_bytes(os.linesep))
+            netrc_file.write(to_bytes(f"login {str(username)}"))
+            netrc_file.write(to_bytes(os.linesep))
+            netrc_file.write(to_bytes(f"password {str(password)}"))
+            netrc_file.write(to_bytes(os.linesep))
         return True
 
     def read_git_netrc(self):
@@ -920,7 +903,7 @@ class GitHostDriver(object):
         netrc_file = open(netrc_filepath, "r")
         file_content = netrc_file.read()
         lines = file_content.split(os.linesep)
-        initial_index = lines.index("machine %s" % (self.host))
+        initial_index = lines.index(f"machine {self.host}")
         login = lines[initial_index + 1].split(" ")[-1]
         password = lines[initial_index + 2].split(" ")[-1]
         return {

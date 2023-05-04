@@ -26,8 +26,7 @@ from datmo.core.util.exceptions import CommitDoesNotExist
 class TestSnapshotController():
     def setup_method(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -45,17 +44,17 @@ class TestSnapshotController():
         # Create config
         self.config_filepath = os.path.join(self.snapshot.home, "config.json")
         with open(self.config_filepath, "wb") as f:
-            f.write(to_bytes(str('{"foo":1}')))
+            f.write(to_bytes('{"foo":1}'))
 
         # Create stats
         self.stats_filepath = os.path.join(self.snapshot.home, "stats.json")
         with open(self.stats_filepath, "wb") as f:
-            f.write(to_bytes(str('{"bar":1}')))
+            f.write(to_bytes('{"bar":1}'))
 
         # Create test file
         self.filepath = os.path.join(self.snapshot.home, "file.txt")
         with open(self.filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
     def teardown_method(self):
         pass

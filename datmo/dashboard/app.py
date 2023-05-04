@@ -16,15 +16,10 @@ app = Flask(__name__)
 base_controller = BaseController()
 
 user = {
-    "name":
-        "Shabaz Patel",
-    "username":
-        "shabazp",
-    "email":
-        "shabaz@datmo.com",
-    "gravatar_url":
-        "https://www.gravatar.com/avatar/" + str(uuid.uuid1()) +
-        "?s=220&d=identicon&r=PG"
+    "name": "Shabaz Patel",
+    "username": "shabazp",
+    "email": "shabaz@datmo.com",
+    "gravatar_url": f"https://www.gravatar.com/avatar/{str(uuid.uuid1())}?s=220&d=identicon&r=PG",
 }
 
 
@@ -94,14 +89,20 @@ def model_snapshots(model_name):
                      for snapshot in snapshots]
     else:
         snapshots = []
-    config_keys = set(
-        item for sublist in
-        [snapshot[0].__dict__["config"].keys() for snapshot in snapshots]
-        for item in sublist)
-    stats_keys = set(
-        item for sublist in
-        [snapshot[0].__dict__["stats"].keys() for snapshot in snapshots]
-        for item in sublist)
+    config_keys = {
+        item
+        for sublist in [
+            snapshot[0].__dict__["config"].keys() for snapshot in snapshots
+        ]
+        for item in sublist
+    }
+    stats_keys = {
+        item
+        for sublist in [
+            snapshot[0].__dict__["stats"].keys() for snapshot in snapshots
+        ]
+        for item in sublist
+    }
     return render_template(
         "model_snapshots.html",
         user=user,
@@ -179,7 +180,7 @@ def model_deployment_data(model_name, deployment_version_id, model_version_id):
         counts, binedges = np.histogram(cumulative_feature_data)
         binsize = binedges[1] - binedges[0]
         bin_names = [
-            str(round(binedge, 2)) + " : " + str(round(binedge + binsize, 2))
+            f"{str(round(binedge, 2))} : {str(round(binedge + binsize, 2))}"
             for binedge in binedges
         ]
         graph_data_output = {
@@ -193,7 +194,7 @@ def model_deployment_data(model_name, deployment_version_id, model_version_id):
             datum[data_type][key_name] if datum[data_type] else None
             for datum in new_data
         ]
-        if len(new_feature_data) > 0:
+        if new_feature_data:
             average = sum(new_feature_data) / float(len(new_feature_data))
         else:
             average = None
@@ -224,9 +225,7 @@ def model_deployment_detail(model_name, deployment_version_id,
         "deployment_version_id": deployment_version_id
     }
     input_keys, prediction_keys, feedback_keys = [], [], []
-    data = datmo_monitoring.search_metadata(filter)
-
-    if data:
+    if data := datmo_monitoring.search_metadata(filter):
         max_index = 0
         for ind, datum in enumerate(data):
             if datum['feedback'] is not None:
@@ -282,9 +281,8 @@ def model_deployments(model_name):
     # get all data and extract unique model_version_id and deployment_version_id
     filter = {"model_id": model_name}
     all_data = datmo_monitoring.search_metadata(filter)
-    model_version_ids = set(data['model_version_id'] for data in all_data)
-    deployment_version_ids = set(
-        data['deployment_version_id'] for data in all_data)
+    model_version_ids = {data['model_version_id'] for data in all_data}
+    deployment_version_ids = {data['deployment_version_id'] for data in all_data}
 
     # Get deployment information for each of the deployments
     deployments = []
@@ -344,7 +342,7 @@ def model_deployment_script_run(model_name, deployment_version_id,
     # ensure that the filepath is a valid path
     if not os.path.isfile(filepath):
         return "error", 400
-    os.system("python " + filepath)
+    os.system(f"python {filepath}")
     return "complete", 200
 
 
@@ -360,14 +358,15 @@ def create_alias():
     filepath = request.args.get('filepath')
     graph_id = request.args.get('graph_id')
 
-    available_filepath = os.path.join(app.root_path, "static", "img",
-                                      graph_id + ".jpg")
+    available_filepath = os.path.join(
+        app.root_path, "static", "img", f"{graph_id}.jpg"
+    )
     print(filepath)
     if os.path.exists(available_filepath):
         os.remove(available_filepath)
     shutil.copy(src=filepath, dst=available_filepath)
     print(available_filepath)
-    webpath = url_for("static", filename="./img/" + graph_id + ".jpg")
+    webpath = url_for("static", filename=f"./img/{graph_id}.jpg")
     return jsonify({"webpath": webpath})
 
 

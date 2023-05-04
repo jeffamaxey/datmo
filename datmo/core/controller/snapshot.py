@@ -203,18 +203,17 @@ class SnapshotController(BaseController):
         # Stats setup
         self._stats_setup(dictionary, create_dict)
 
-        # If snapshot object with required args already exists, return it
-        # DO NOT create a new snapshot with the same required arguments
-        results = self.dal.snapshot.query({
-            "model_id": create_dict["model_id"],
-            "code_id": create_dict['code_id'],
-            "environment_id": create_dict['environment_id'],
-            "file_collection_id": create_dict['file_collection_id'],
-            "config": create_dict['config'],
-            "stats": create_dict['stats']
-        })
-        if results: return results[0]
-
+        if results := self.dal.snapshot.query(
+            {
+                "model_id": create_dict["model_id"],
+                "code_id": create_dict['code_id'],
+                "environment_id": create_dict['environment_id'],
+                "file_collection_id": create_dict['file_collection_id'],
+                "config": create_dict['config'],
+                "stats": create_dict['stats'],
+            }
+        ):
+            return results[0]
         # Optional args for Snapshot entity
         optional_args = ["task_id", "label", "visible"]
         for optional_arg in optional_args:
@@ -620,23 +619,23 @@ class SnapshotController(BaseController):
         """
 
         file_collection_obj = self.file_collection_controller.dal.file_collection.\
-            get_by_id(file_collection_id)
+                get_by_id(file_collection_id)
         file_collection_path = \
-            self.file_collection_controller.file_driver.get_collection_path(
+                self.file_collection_controller.file_driver.get_collection_path(
                 file_collection_obj.filehash)
         # find all of the possible paths it could exist
         possible_paths = [os.path.join(self.home, file_to_find)] + \
-                            [os.path.join(self.home, item[0], file_to_find)
+                                [os.path.join(self.home, item[0], file_to_find)
                             for item in os.walk(file_collection_path)]
-        existing_possible_paths = [
-            possible_path for possible_path in possible_paths
+        if existing_possible_paths := [
+            possible_path
+            for possible_path in possible_paths
             if os.path.isfile(possible_path)
-        ]
-        if not existing_possible_paths:
-            # TODO: Add some info / warning that no file was found
-            # create some default stats
-            return {}
-        else:
+        ]:
             # If any such path exists, transform file to stats dict
             json_file = JSONStore(existing_possible_paths[0])
             return json_file.to_dict()
+        else:
+            # TODO: Add some info / warning that no file was found
+            # create some default stats
+            return {}

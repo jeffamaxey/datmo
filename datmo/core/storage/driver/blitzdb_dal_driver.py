@@ -64,11 +64,10 @@ class BlitzDBDALDriver(DALDriver):
         self.__reload()
         try:
             results = self.backend.filter(collection, {'pk': entity_id})
-            if len(results) == 1:
-                item_dict = results[0].attributes
-                return normalize_entity(item_dict)
-            else:
+            if len(results) != 1:
                 raise EntityNotFound()
+            item_dict = results[0].attributes
+            return normalize_entity(item_dict)
         except AttributeError as err:
             raise EntityCollectionNotFound(err.message)
 
@@ -76,9 +75,8 @@ class BlitzDBDALDriver(DALDriver):
         self.__reload()
         try:
             results = self.backend.filter(
-                collection, {'pk': {
-                    '$regex': '^%s' % shortened_entity_id
-                }})
+                collection, {'pk': {'$regex': f'^{shortened_entity_id}'}}
+            )
             if len(results) == 1:
                 item_dict = results[0].attributes
                 return normalize_entity(item_dict)
@@ -122,32 +120,32 @@ class BlitzDBDALDriver(DALDriver):
         if query_params.get('id', None) is not None:
             query_params['pk'] = query_params['id']
             del query_params['id']
-        if sort_key is not None and sort_order is not None:
-            if sort_order == 'ascending':
-                return list(
-                    map(normalize_entity, [
-                        item.attributes.copy() for item in self.backend.filter(
-                            collection, query_params).sort(
-                                sort_key, queryset.QuerySet.ASCENDING)
-                    ]))
-            elif sort_order == 'descending':
-                return list(
-                    map(normalize_entity, [
-                        item.attributes.copy() for item in self.backend.filter(
-                            collection, query_params).sort(
-                                sort_key, queryset.QuerySet.DESCENDING)
-                    ]))
-            else:
-                raise InvalidArgumentType()
-        else:
-            if sort_key is not None and sort_order is None or \
-                sort_key is None and sort_order is not None:
+        if sort_key is None or sort_order is None:
+            if sort_key is not None or sort_order is not None:
                 raise RequiredArgumentMissing()
+            else:
+                return list(
+                    map(normalize_entity, [
+                        item.attributes.copy()
+                        for item in self.backend.filter(collection, query_params)
+                    ]))
+
+        elif sort_order == 'ascending':
             return list(
                 map(normalize_entity, [
-                    item.attributes.copy()
-                    for item in self.backend.filter(collection, query_params)
+                    item.attributes.copy() for item in self.backend.filter(
+                        collection, query_params).sort(
+                            sort_key, queryset.QuerySet.ASCENDING)
                 ]))
+        elif sort_order == 'descending':
+            return list(
+                map(normalize_entity, [
+                    item.attributes.copy() for item in self.backend.filter(
+                        collection, query_params).sort(
+                            sort_key, queryset.QuerySet.DESCENDING)
+                ]))
+        else:
+            raise InvalidArgumentType()
 
     def delete(self, collection, entity_id):
         self.__reload()

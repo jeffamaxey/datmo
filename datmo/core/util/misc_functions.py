@@ -57,24 +57,20 @@ def bytes2human(n):
     # >>> bytes2human(100001221)
     # '95.4M'
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10
+    prefix = {s: 1 << (i + 1) * 10 for i, s in enumerate(symbols)}
     for s in reversed(symbols):
         if n >= prefix[s]:
             value = float(n) / prefix[s]
             return '%.1f%s' % (value, s)
-    return "%sB" % n
+    return f"{n}B"
 
 
 def grep(pattern, fileObj):
-    r = []
-    linenumber = 0
-    for line in fileObj:
-        linenumber += 1
-        if re.search(pattern, line):
-            r.append((linenumber, line))
-    return r
+    return [
+        (linenumber, line)
+        for linenumber, line in enumerate(fileObj, start=1)
+        if re.search(pattern, line)
+    ]
 
 
 def printable_dict(input_dictionary):
@@ -128,21 +124,12 @@ def which(program):
 
 def get_nvidia_devices():
     nvidia_devices = glob('/dev/nvidia*')
-    devices = []
-    for device in nvidia_devices:
-        devices.append(device + ':' + device + ':rwm')
-    return devices
+    return [f'{device}:{device}:rwm' for device in nvidia_devices]
 
 
 def create_unique_hash(base_hash=None, salt=None):
-    if not salt:
-        salt = os.urandom(16)
-    else:
-        salt = salt.encode('utf-8')
-    if not base_hash:
-        sha1 = hashlib.sha1()
-    else:
-        sha1 = hashlib.sha1(base_hash)
+    salt = salt.encode('utf-8') if salt else os.urandom(16)
+    sha1 = hashlib.sha1(base_hash) if base_hash else hashlib.sha1()
     timestamp_microsec = (
         datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)
     ).total_seconds() * 100000
@@ -238,7 +225,7 @@ def check_docker_inactive(filepath, datmo_directory_name):
         if platform.system() == "Windows":
             with open(definition_path, "wb") as f:
                 f.write(to_bytes("FROM python:3.5-alpine" + "\n"))
-                f.write(to_bytes(str("RUN echo hello")))
+                f.write(to_bytes("RUN echo hello"))
             test.build("docker-test", definition_path)
         return False
     except (EnvironmentConnectFailed, EnvironmentExecutionError):
@@ -284,7 +271,7 @@ def prettify_datetime(datetime_obj, tz=None):
 
 def format_table(data, padding=2):
     data_rows = [len(row) for row in data]
-    num_col = max(data_rows) if data_rows else 0
+    num_col = max(data_rows, default=0)
     col_widths = []
     for i in range(num_col):
         col_width = max(len(row[i]) for row in data) + padding
@@ -387,10 +374,11 @@ def parse_paths(default_src_prefix, paths, dest_prefix):
         # For dest_name, append the dest_prefix
         dest_abs_path = os.path.join(dest_prefix, dest_name)
         # For src_path if not absolute, append the default src_prefix
-        if not os.path.isabs(path):
-            src_abs_path = os.path.join(default_src_prefix, src_path)
-        else:
-            src_abs_path = src_path
+        src_abs_path = (
+            src_path
+            if os.path.isabs(path)
+            else os.path.join(default_src_prefix, src_path)
+        )
         # Check if source is file or directory and save accordingly
         if os.path.isfile(src_abs_path):
             files.append((src_abs_path, dest_abs_path))
@@ -412,8 +400,7 @@ def get_headers(access_key):
 
 def authenticated_get_call(url, access_key=None, stream=False):
     headers = get_headers(access_key)
-    res = requests.get(url, headers=headers, stream=stream)
-    return res
+    return requests.get(url, headers=headers, stream=stream)
 
 
 def authenticated_post_call(url,
@@ -421,20 +408,17 @@ def authenticated_post_call(url,
                             access_key=None,
                             content_type="application/json"):
     headers = get_headers(access_key)
-    res = requests.post(url, data=data, headers=headers)
-    return res
+    return requests.post(url, data=data, headers=headers)
 
 
 def authenticated_put_call(url, data, access_key=None):
     headers = get_headers(access_key)
-    res = requests.put(url, data=data, headers=headers)
-    return res
+    return requests.put(url, data=data, headers=headers)
 
 
 def authenticated_delete_call(url, access_key=None):
     headers = get_headers(access_key)
-    res = requests.delete(url, headers=headers)
-    return res
+    return requests.delete(url, headers=headers)
 
 
 # class for colors
@@ -464,42 +448,32 @@ class Commands(object):
                 p = subprocess.Popen(shell_cmd, stdout=subprocess.PIPE)
                 out, e = p.communicate()
                 self.log.info("")
-                if e:
-                    self.log.info(e)
-                    self.log.info(
-                        bcolors.FAIL + "error while running the command %s" %
-                        (shell_cmd))
-                else:
+                if not e:
                     return {'output': out, 'status': True}
+                self.log.info(e)
+                self.log.info(f"{bcolors.FAIL}error while running the command {shell_cmd}")
             else:
                 process_returncode = subprocess.Popen(
                     shell_cmd, shell=True).wait()
                 self.log.info("")
-                if process_returncode == 0:
-                    return {'status': True}
-                else:
-                    return {'status': False}
+                return {'status': True} if process_returncode == 0 else {'status': False}
         except Exception as e:
             self.log.info(e)
-            self.log.info(bcolors.FAIL + "error while running the command %s" %
-                          (shell_cmd))
+            self.log.info(f"{bcolors.FAIL}error while running the command {shell_cmd}")
             return {'status': False}
 
     def docker_build(self, dockerfile_path=None, project_name=None):
         if dockerfile_path:
-            shell_cmd = '%s build -t %s -f %s .' % (self.docker_cli,
-                                                    project_name,
-                                                    dockerfile_path)
+            shell_cmd = f'{self.docker_cli} build -t {project_name} -f {dockerfile_path} .'
         else:
-            shell_cmd = '%s build -t %s .' % (self.docker_cli, project_name)
+            shell_cmd = f'{self.docker_cli} build -t {project_name} .'
 
         self.run_cmd(shell_cmd)
 
     def docker_tag(self, project_name, old_image_tag, new_image_tag):
-        old_image_name_tag = project_name + ':' + old_image_tag
-        new_image_name_tag = project_name + ':' + new_image_tag
-        shell_cmd = '%s tag %s  %s' % (self.docker_cli, old_image_name_tag,
-                                       new_image_name_tag)
+        old_image_name_tag = f'{project_name}:{old_image_tag}'
+        new_image_name_tag = f'{project_name}:{new_image_tag}'
+        shell_cmd = f'{self.docker_cli} tag {old_image_name_tag}  {new_image_name_tag}'
         self.run_cmd(shell_cmd)
 
     def zip_folder(self, folder_path, output_path):
@@ -547,13 +521,11 @@ class Commands(object):
         file_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 'src_files')
 
-        # Combine dockerfiles
-        destination = open(os.path.join(filepath, 'datmoDockerfile'), 'wb')
-        shutil.copyfileobj(
-            open(os.path.join(filepath, dockerfile), 'rb'), destination)
-        shutil.copyfileobj(
-            open(os.path.join(file_dir, 'stubDockerfile'), 'rb'), destination)
-        destination.close()
+        with open(os.path.join(filepath, 'datmoDockerfile'), 'wb') as destination:
+            shutil.copyfileobj(
+                open(os.path.join(filepath, dockerfile), 'rb'), destination)
+            shutil.copyfileobj(
+                open(os.path.join(file_dir, 'stubDockerfile'), 'rb'), destination)
 
     def copy(self, src, dst, symlinks=False, ignore=None):
         for item in os.listdir(src):

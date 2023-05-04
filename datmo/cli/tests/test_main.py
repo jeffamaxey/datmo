@@ -19,7 +19,7 @@ except TypeError:
 from datmo.core.util.misc_functions import pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -37,31 +37,31 @@ class TestMain():
         # Create config file
         self.config_filepath = os.path.join(self.temp_dir, "config.json")
         with open(self.config_filepath, "wb") as f:
-            f.write(to_bytes(str("{}")))
+            f.write(to_bytes("{}"))
 
         # Create stats file
         self.stats_filepath = os.path.join(self.temp_dir, "stats.json")
         with open(self.stats_filepath, "wb") as f:
-            f.write(to_bytes(str("{}")))
+            f.write(to_bytes("{}"))
 
         # Create test file
         self.filepath = os.path.join(self.temp_dir, "file.txt")
         with open(self.filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Create script file
         self.script_filepath = os.path.join(self.temp_dir, "script.py")
         with open(self.script_filepath, "wb") as f:
-            f.write(to_bytes(str('print("hello")')))
+            f.write(to_bytes('print("hello")'))
 
     def command_run(self, command):
-        p = subprocess.Popen(
+        return subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=self.temp_dir)
-        return p
+            cwd=self.temp_dir,
+        )
 
     def teardown_class(self):
         pass
@@ -76,9 +76,7 @@ class TestMain():
                 cwd=self.temp_dir)
             out, err = p.communicate()
             out, err = out.decode(), err.decode()
-            if err:
-                success = False
-            elif "datmo version:" not in out:
+            if err or "datmo version:" not in out:
                 success = False
         except Exception:
             success = False
@@ -93,9 +91,7 @@ class TestMain():
             ])
             out, err = p.communicate(to_bytes("\n"))
             out, err = out.decode(), err.decode()
-            if err:
-                success = False
-            elif "Initializing project" not in out:
+            if err or "Initializing project" not in out:
                 success = False
         except Exception:
             success = False
@@ -122,9 +118,7 @@ class TestMain():
             p = self.command_run([self.execpath, "ls"])
             out, err = p.communicate()
             out, err = out.decode(), err.decode()
-            if err:
-                success = False
-            elif 'id' not in out:
+            if err or 'id' not in out:
                 success = False
         except Exception:
             success = False
@@ -137,9 +131,7 @@ class TestMain():
                 [self.execpath, "snapshot", "create", "-m", "message"])
             out, err = p.communicate()
             out, err = out.decode(), err.decode()
-            if err:
-                success = False
-            elif 'Created snapshot with id' not in out:
+            if err or 'Created snapshot with id' not in out:
                 success = False
         except Exception:
             success = False
@@ -151,9 +143,7 @@ class TestMain():
             p = self.command_run([self.execpath, "snapshot", "ls"])
             out, err = p.communicate()
             out, err = out.decode(), err.decode()
-            if err:
-                success = False
-            elif 'id' not in out:
+            if err or 'id' not in out:
                 success = False
         except Exception:
             success = False

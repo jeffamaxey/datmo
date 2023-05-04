@@ -136,7 +136,7 @@ class PathDoesNotExist(FileExecutionError):
 
     def __str__(self):
         if self.file_path:
-            return "Path being passed doesn't exist: %s" % self.file_path
+            return f"Path being passed doesn't exist: {self.file_path}"
         else:
             return "Path being passed doesn't exist"
 
@@ -240,10 +240,9 @@ class ValidationFailed(ArgumentError):
             __("error", "exception.validationfailed", self.get_error_str()))
 
     def get_error_str(self):
-        err_str = ''
-        for name in self.errors:
-            err_str += "'%s': %s\n" % (name, self.errors[name])
-        return err_str
+        return ''.join(
+            "'%s': %s\n" % (name, self.errors[name]) for name in self.errors
+        )
 
 
 class DatmoFolderInWorkTree(CodeException):

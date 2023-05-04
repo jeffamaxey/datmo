@@ -82,10 +82,7 @@ class JSONStore():
                 self.in_memory_settings = settings
             except Exception as err:
                 raise SaveSettingError(err)
-            if name in settings:
-                return settings[name]
-            else:
-                return None
+            return settings[name] if name in settings else None
 
     def remove(self, name):
         if not os.path.exists(self.filepath):
@@ -104,7 +101,7 @@ class JSONStore():
         return
 
     def to_dict(self):
-        output_dict = dict()
+        output_dict = {}
         # reading json file
         if os.path.exists(self.filepath):
             with open(self.filepath) as data_file:

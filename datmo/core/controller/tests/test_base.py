@@ -1,6 +1,7 @@
 """
 Tests for BaseController
 """
+
 from __future__ import division
 from __future__ import unicode_literals
 
@@ -20,7 +21,7 @@ from datmo.core.util.exceptions import  \
 from datmo.core.util.misc_functions import pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -52,7 +53,7 @@ class TestBaseController():
 
     def test_datmo_model(self):
         # Test failure case
-        assert self.base_controller.model == None
+        assert self.base_controller.model is None
 
         # Test success case
         self.project_controller.init(name="test", description="test")
@@ -89,7 +90,7 @@ class TestBaseController():
         assert self.base_controller.dal != None
         thrown = False
         try:
-            self.base_controller.dal.model == None
+            self.base_controller.dal.model is None
         except DALNotInitialized:
             thrown = True
         assert thrown

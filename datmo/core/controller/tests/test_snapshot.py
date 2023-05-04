@@ -35,7 +35,7 @@ from datmo.core.util.exceptions import (
 from datmo.core.util.misc_functions import check_docker_inactive, pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -138,7 +138,7 @@ class TestSnapshotController():
         test_file = os.path.join(
             self.project_controller.file_driver.files_directory, "test.txt")
         with open(test_file, "wb") as f:
-            f.write(to_bytes(str("hello")))
+            f.write(to_bytes("hello"))
 
         # test must pass when there is file present in root project folder
         result = self.snapshot_controller.create({
@@ -247,7 +247,7 @@ class TestSnapshotController():
         env_def_path = os.path.join(random_dir, "randomDockerfile")
         with open(env_def_path, "wb") as f:
             f.write(to_bytes("FROM python:3.5-alpine"))
-        environment_paths = [env_def_path + ">Dockerfile"]
+        environment_paths = [f"{env_def_path}>Dockerfile"]
 
         # Test default values for snapshot, success
         snapshot_obj = self.snapshot_controller.create({
@@ -338,13 +338,13 @@ class TestSnapshotController():
         config_filepath = os.path.join(self.snapshot_controller.home,
                                        "config.json")
         with open(config_filepath, "wb") as f:
-            f.write(to_bytes(str('{"foo":"bar"}')))
+            f.write(to_bytes('{"foo":"bar"}'))
 
         # Create stats
         stats_filepath = os.path.join(self.snapshot_controller.home,
                                       "stats.json")
         with open(stats_filepath, "wb") as f:
-            f.write(to_bytes(str('{"foo":"bar"}')))
+            f.write(to_bytes('{"foo":"bar"}'))
 
         input_dict = {
             "message": "my test snapshot",
@@ -357,9 +357,9 @@ class TestSnapshotController():
         assert snapshot_obj_4 != snapshot_obj
         assert snapshot_obj_4.code_id != snapshot_obj.code_id
         assert snapshot_obj_4.environment_id == \
-               snapshot_obj.environment_id
+                   snapshot_obj.environment_id
         assert snapshot_obj_4.file_collection_id != \
-               snapshot_obj.file_collection_id
+                   snapshot_obj.file_collection_id
         assert snapshot_obj_4.config == {"foo": "bar"}
         assert snapshot_obj_4.stats == {"foo": "bar"}
 
@@ -402,13 +402,13 @@ class TestSnapshotController():
         config_filepath = os.path.join(self.snapshot_controller.home,
                                        "config.json")
         with open(config_filepath, "wb") as f:
-            f.write(to_bytes(str('{"foo":"bar"}')))
+            f.write(to_bytes('{"foo":"bar"}'))
 
         # Create stats
         stats_filepath = os.path.join(self.snapshot_controller.home,
                                       "stats.json")
         with open(stats_filepath, "wb") as f:
-            f.write(to_bytes(str('{"foo":"bar"}')))
+            f.write(to_bytes('{"foo":"bar"}'))
 
         # Test different config and stats inputs
         input_dict = {
@@ -589,9 +589,8 @@ class TestSnapshotController():
             message="my test snapshot",
             task_id=updated_task_obj_2.id,
             label="best")
-        updated_stats_dict = {}
-        updated_stats_dict.update(test_stats)
-        updated_stats_dict.update(updated_task_obj.results)
+        updated_stats_dict = dict(test_stats)
+        updated_stats_dict |= updated_task_obj.results
 
         assert isinstance(snapshot_obj, Snapshot)
         assert snapshot_obj.id == updated_task_obj_2.after_snapshot_id
@@ -617,9 +616,9 @@ class TestSnapshotController():
             os.path.join(files_directory_relative_path, "filepath1"))
         self.snapshot_controller.file_driver.create("filepath2")
         with open(
-                os.path.join(self.snapshot_controller.home, "filepath2"),
-                "wb") as f:
-            f.write(to_bytes(str("import sys\n")))
+                    os.path.join(self.snapshot_controller.home, "filepath2"),
+                    "wb") as f:
+            f.write(to_bytes("import sys\n"))
         # Create environment_driver definition
         env_def_path = os.path.join(self.project_controller.environment_driver.
                                     environment_directory_path, "Dockerfile")
@@ -630,13 +629,13 @@ class TestSnapshotController():
         config_filepath = os.path.join(self.snapshot_controller.home,
                                        "config.json")
         with open(config_filepath, "wb") as f:
-            f.write(to_bytes(str("{}")))
+            f.write(to_bytes("{}"))
 
         # Create stats
         stats_filepath = os.path.join(self.snapshot_controller.home,
                                       "stats.json")
         with open(stats_filepath, "wb") as f:
-            f.write(to_bytes(str("{}")))
+            f.write(to_bytes("{}"))
 
         input_dict = {
             "message": "my test snapshot",
@@ -684,7 +683,7 @@ class TestSnapshotController():
         test_filepath_1 = os.path.join(self.snapshot_controller.home,
                                        "test.txt")
         with open(test_filepath_1, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Create snapshot in the project
         snapshot_obj_1 = self.__default_create()
@@ -693,7 +692,7 @@ class TestSnapshotController():
         test_filepath_2 = os.path.join(self.snapshot_controller.home,
                                        "test2.txt")
         with open(test_filepath_2, "wb") as f:
-            f.write(to_bytes(str("test2")))
+            f.write(to_bytes("test2"))
 
         # Create second snapshot in the project
         snapshot_obj_2 = self.__default_create()
@@ -702,24 +701,24 @@ class TestSnapshotController():
         result = self.snapshot_controller.list()
 
         assert len(result) == 2 and \
-            snapshot_obj_1 in result and \
-            snapshot_obj_2 in result
+                snapshot_obj_1 in result and \
+                snapshot_obj_2 in result
 
         # List all tasks regardless of filters in ascending
         result = self.snapshot_controller.list(
             sort_key='created_at', sort_order='ascending')
 
         assert len(result) == 2 and \
-               snapshot_obj_1 in result and \
-               snapshot_obj_2 in result
+                   snapshot_obj_1 in result and \
+                   snapshot_obj_2 in result
         assert result[0].created_at <= result[-1].created_at
 
         # List all tasks regardless of filters in descending
         result = self.snapshot_controller.list(
             sort_key='created_at', sort_order='descending')
         assert len(result) == 2 and \
-               snapshot_obj_1 in result and \
-               snapshot_obj_2 in result
+                   snapshot_obj_1 in result and \
+                   snapshot_obj_2 in result
         assert result[0].created_at >= result[-1].created_at
 
         # Wrong order being passed in
@@ -755,8 +754,8 @@ class TestSnapshotController():
 
         result = self.snapshot_controller.list(visible=True)
         assert len(result) == 2 and \
-               snapshot_obj_1 in result and \
-               snapshot_obj_2 in result
+                   snapshot_obj_1 in result and \
+                   snapshot_obj_2 in result
 
     def test_update(self):
         self.__setup()
@@ -907,5 +906,4 @@ class TestSnapshotController():
         except EntityNotFound:
             thrown = True
 
-        assert result == True and \
-            thrown == True
+        assert result == True and thrown

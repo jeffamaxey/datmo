@@ -37,8 +37,7 @@ class TestLocalFileDriver():
 
     def setup_method(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -214,12 +213,11 @@ class TestLocalFileDriver():
             self.local_file_driver.create_files_dir()
         except Exception:
             thrown = True
-        assert thrown == True and \
-            not os.path.isdir(files_path)
+        assert thrown and not os.path.isdir(files_path)
         self.local_file_driver.init()
         result = self.local_file_driver.create_files_dir()
         assert result == True and \
-            os.path.isdir(files_path)
+                os.path.isdir(files_path)
 
     def test_exists_files_dir(self):
         files_path = os.path.join(self.local_file_driver.datmo_directory,
@@ -258,12 +256,11 @@ class TestLocalFileDriver():
             self.local_file_driver.create_collections_dir()
         except Exception:
             thrown = True
-        assert thrown == True and \
-            not os.path.isdir(collections_path)
+        assert thrown and not os.path.isdir(collections_path)
         self.local_file_driver.init()
         result = self.local_file_driver.create_collections_dir()
         assert result == True and \
-            os.path.isdir(collections_path)
+                os.path.isdir(collections_path)
 
     def test_exists_collections_dir(self):
         collections_path = os.path.join(self.local_file_driver.datmo_directory,
@@ -325,7 +322,7 @@ class TestLocalFileDriver():
 
         # Test empty file collection already exists
         filehash_empty, _, _ = self.local_file_driver. \
-            create_collection([])
+                create_collection([])
         collection_path_empty = os.path.join(collections_path, filehash_empty)
 
         assert os.path.isdir(collection_path_empty)
@@ -333,7 +330,7 @@ class TestLocalFileDriver():
 
         # Test creating another empty file collection (should not fail again)
         filehash_empty, _, _ = self.local_file_driver. \
-            create_collection([])
+                create_collection([])
         collection_path_empty = os.path.join(collections_path, filehash_empty)
 
         assert os.path.isdir(collection_path_empty)
@@ -348,7 +345,7 @@ class TestLocalFileDriver():
         dirpath2 = os.path.join(self.local_file_driver.root, "dirpath2")
         filepath1 = os.path.join(self.local_file_driver.root, "filepath1")
         filehash, _, _ = self.local_file_driver.\
-            create_collection([dirpath1, dirpath2, filepath1])
+                create_collection([dirpath1, dirpath2, filepath1])
         collection_path = os.path.join(collections_path, filehash)
 
         assert os.path.isdir(collection_path)
@@ -359,22 +356,16 @@ class TestLocalFileDriver():
         assert os.path.isfile(os.path.join(collection_path, "filepath1"))
 
         # Only assume success for non-Windows platforms
-        if not platform.system() == "Windows":
-            assert (oct(
-                os.stat(os.path.join(collection_path, "dirpath1")).st_mode &
-                0o777) == '0o755' or oct(
-                    os.stat(os.path.join(collection_path, "dirpath1")).st_mode
-                    & 0o777) == '0755')
-            assert (oct(
-                os.stat(os.path.join(collection_path, "dirpath2")).st_mode &
-                0o777) == '0o755' or oct(
-                    os.stat(os.path.join(collection_path, "dirpath2")).st_mode
-                    & 0o777) == '0755')
-            assert (oct(
-                os.stat(os.path.join(collection_path, "filepath1")).st_mode &
-                0o777) == '0o755' or oct(
-                    os.stat(os.path.join(collection_path, "filepath1")).st_mode
-                    & 0o777) == '0755')
+        if platform.system() != "Windows":
+            assert oct(
+                os.stat(os.path.join(collection_path, "dirpath1")).st_mode & 0o777
+            ) in {'0o755', '0755'}
+            assert oct(
+                os.stat(os.path.join(collection_path, "dirpath2")).st_mode & 0o777
+            ) in {'0o755', '0755'}
+            assert oct(
+                os.stat(os.path.join(collection_path, "filepath1")).st_mode & 0o777
+            ) in {'0o755', '0755'}
         # TODO: Create test for Windows platform
         # else:
         #     assert (oct(

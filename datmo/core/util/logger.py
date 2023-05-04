@@ -34,17 +34,12 @@ class DatmoLogger(object):
 
         def get_logging_level(self):
             level = os.environ.get('LOGGING_LEVEL', 'WARNING')
-            if hasattr(logging, level):
-                return getattr(logging, level)
-            else:
-                # warning
-                return 30
+            return getattr(logging, level) if hasattr(logging, level) else 30
 
     def __new__(cls, dirpath=None):  # __new__ always a classmethod
         if not dirpath:
             dirpath = os.path.expanduser("~")
-        if not hasattr(DatmoLogger, "instance") or \
-            (hasattr(DatmoLogger, "instance") and not DatmoLogger.instance):
+        if not hasattr(DatmoLogger, "instance") or not DatmoLogger.instance:
             DatmoLogger.instance = DatmoLogger.__InternalObj(dirpath)
         return DatmoLogger.instance
 
@@ -64,12 +59,10 @@ class DatmoLogger(object):
         results = []
         for logfile in DatmoLogger.get_logfiles():
             with open(logfile, "r") as f:
-                for r in grep(text_str, f):
-                    results.append({
-                        "file": logfile,
-                        "line_number": r[0],
-                        "line": r[1]
-                    })
+                results.extend(
+                    {"file": logfile, "line_number": r[0], "line": r[1]}
+                    for r in grep(text_str, f)
+                )
         return results
 
     @staticmethod
@@ -90,7 +83,7 @@ class DatmoLogger(object):
         """
 
         # get or create logging path
-        if DatmoLogger().logging_path == None:
+        if DatmoLogger().logging_path is None:
             DatmoLogger().logging_path = tempfile.mkdtemp()
 
         logging_path = DatmoLogger().logging_path
@@ -131,8 +124,9 @@ class DatmoLogger(object):
             log_file_handler.setLevel(DatmoLogger().logging_level)
             log_file_handler.setFormatter(
                 logging.Formatter(
-                    '%(asctime)s - [' + name +
-                    '@%(module)s.%(funcName)s] [%(levelname)s] - %(message)s'))
+                    f'%(asctime)s - [{name}@%(module)s.%(funcName)s] [%(levelname)s] - %(message)s'
+                )
+            )
             log.addHandler(log_file_handler)
         else:
             print("warning logging doesnt have handlers")
@@ -148,12 +142,9 @@ class DatmoLogger(object):
             result = method(*args, **kw)
             te = time.time()
             duration = '{message:{fill}{align}{width}}'.format(
-                message=str(int((te - ts) * 1000)) + 'ms',
-                fill=' ',
-                width=10,
-                align='<')
-            log.debug("%s %s.%s" % (duration, method.__module__,
-                                    method.__name__))
+                message=f'{int((te - ts) * 1000)}ms', fill=' ', width=10, align='<'
+            )
+            log.debug(f"{duration} {method.__module__}.{method.__name__}")
             return result
 
         return timed

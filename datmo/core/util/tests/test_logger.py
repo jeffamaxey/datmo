@@ -13,8 +13,7 @@ from datmo.core.util.logger import DatmoLogger
 class TestLogger():
     def setup_class(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -32,7 +31,7 @@ class TestLogger():
 
     def test_datmo_logger_get_logfiles(self):
         files = DatmoLogger.get_logfiles()
-        assert len(list(files)) > 0
+        assert list(files)
         for f in files:
             assert DatmoLogger(dirpath=self.temp_dir).logging_path in f
 

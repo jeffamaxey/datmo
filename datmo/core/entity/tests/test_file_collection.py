@@ -20,7 +20,7 @@ class TestFileCollection():
 
         for k, v in self.input_dict.items():
             assert getattr(file_collection_entity, k) == v
-        assert file_collection_entity.id == None
+        assert file_collection_entity.id is None
         assert file_collection_entity.created_at
         assert file_collection_entity.updated_at
 

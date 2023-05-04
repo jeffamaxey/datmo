@@ -66,9 +66,8 @@ class FileCollection():
 
     def to_dictionary(self):
         attr_dict = self.__dict__
-        pruned_attr_dict = {
+        return {
             attr: val
             for attr, val in attr_dict.items()
             if not callable(getattr(self, attr)) and not attr.startswith("__")
         }
-        return pruned_attr_dict

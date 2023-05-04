@@ -108,23 +108,30 @@ class Snapshot():
             final_str = final_str + '\033[94m' + ")" + '\033[0m' + os.linesep
         else:
             final_str = '\033[94m' + "snapshot " + self.id + '\033[0m' + os.linesep
-        final_str = final_str + "Date: " + prettify_datetime(
-            self.created_at) + os.linesep
+        final_str = (
+            f"{final_str}Date: {prettify_datetime(self.created_at)}{os.linesep}"
+        )
         table_data = []
         if self.task_id:
-            table_data.append(["Task", "-> " + self.task_id])
-        # Components
-        table_data.append(["Code", "-> " + self.code_id])
-        table_data.append(["Environment", "-> " + self.environment_id])
+            table_data.append(["Task", f"-> {self.task_id}"])
+        table_data.extend(
+            (
+                ["Code", f"-> {self.code_id}"],
+                ["Environment", f"-> {self.environment_id}"],
+            )
+        )
         if not self.files:
             table_data.append(["Files", "-> None"])
         else:
-            table_data.append(["Files", "-> " + self.files[0].name])
+            table_data.append(["Files", f"-> {self.files[0].name}"])
             if len(list(self.files)) > 1:
-                for f in self.files[1:]:
-                    table_data.append(["     ", "-> " + f.name])
-        table_data.append(["Config", "-> " + str(self.config)])
-        table_data.append(["Stats", "-> " + str(self.stats)])
+                table_data.extend(["     ", f"-> {f.name}"] for f in self.files[1:])
+        table_data.extend(
+            (
+                ["Config", f"-> {str(self.config)}"],
+                ["Stats", f"-> {str(self.stats)}"],
+            )
+        )
         final_str = final_str + format_table(table_data)
         final_str = final_str + os.linesep + "    " + self.message + os.linesep + os.linesep
         return final_str
@@ -222,10 +229,6 @@ def create(message,
         core_snapshot_obj = snapshot_controller.create_from_task(
             message, run_id, label=label, config=config, stats=stats)
 
-        # Create a new snapshot object
-        client_snapshot_obj = Snapshot(core_snapshot_obj)
-
-        return client_snapshot_obj
     else:
         snapshot_create_dict = {"message": message}
 
@@ -252,10 +255,8 @@ def create(message,
         core_snapshot_obj = snapshot_controller.update(
             core_snapshot_obj.id, visible=True)
 
-        # Create a new snapshot object
-        client_snapshot_obj = Snapshot(core_snapshot_obj)
 
-        return client_snapshot_obj
+    return Snapshot(core_snapshot_obj)
 
 
 def ls(filter=None):
@@ -302,11 +303,18 @@ def ls(filter=None):
     ]
     # If filter is present then use it and only add those that pass filter
     for core_snapshot_obj in core_snapshot_objs:
-        if core_snapshot_obj.visible:
-            if filter and \
-                ((filter in core_snapshot_obj.message) \
-                    or (core_snapshot_obj.label != None and filter in core_snapshot_obj.label)):
-                filtered_core_snapshot_objs.append(core_snapshot_obj)
+        if (
+            core_snapshot_obj.visible
+            and filter
+            and (
+                (filter in core_snapshot_obj.message)
+                or (
+                    core_snapshot_obj.label != None
+                    and filter in core_snapshot_obj.label
+                )
+            )
+        ):
+            filtered_core_snapshot_objs.append(core_snapshot_obj)
 
     # Return Snapshot entities
     return [

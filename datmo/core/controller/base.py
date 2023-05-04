@@ -42,7 +42,7 @@ class BaseController(object):
     """
 
     def __init__(self, home=None):
-        self.home = Config().home if not home else home
+        self.home = home if home else Config().home
         if not os.path.isdir(self.home):
             raise InvalidProjectPath(
                 __("error", "controller.base.__init__", self.home))
@@ -57,25 +57,22 @@ class BaseController(object):
 
     @property
     def file_driver(self):
-        if self._file_driver == None:
+        if self._file_driver is None:
             module_details = self.config_loader("controller.file.driver")
             self._file_driver = module_details["constructor"](
                 **module_details["options"])
         return self._file_driver
 
     @property
-    # Controller objects are only in sync if the data drivers are the same between objects
-    # Currently pass dal_driver down from controller to controller to ensure syncing dals
-    # TODO: To fix dal from different controllers so they sync within one session; they do NOT currently
     def dal(self):
-        if self._dal == None:
+        if self._dal is None:
             dal_dict = self.config_loader("storage.local")
             self._dal = dal_dict["constructor"](**dal_dict["options"])
         return self._dal
 
     @property
     def code_driver(self):
-        if self._code_driver == None:
+        if self._code_driver is None:
             module_details = self.config_loader("controller.code.driver")
             self._code_driver = module_details["constructor"](
                 **module_details["options"])
@@ -83,7 +80,7 @@ class BaseController(object):
 
     @property
     def environment_driver(self):
-        if self._environment_driver == None:
+        if self._environment_driver is None:
             module_details = self.config_loader(
                 "controller.environment.driver")
             self._environment_driver = module_details["constructor"](
@@ -92,13 +89,15 @@ class BaseController(object):
 
     @property
     def is_initialized(self):
-        if not self._is_initialized:
-            if self.file_driver.is_initialized and \
-                self.dal.is_initialized and \
-                self.code_driver.is_initialized and \
-                self.environment_driver.is_initialized and \
-                self.model:
-                self._is_initialized = True
+        if (
+            not self._is_initialized
+            and self.file_driver.is_initialized
+            and self.dal.is_initialized
+            and self.code_driver.is_initialized
+            and self.environment_driver.is_initialized
+            and self.model
+        ):
+            self._is_initialized = True
         return self._is_initialized
 
     @property

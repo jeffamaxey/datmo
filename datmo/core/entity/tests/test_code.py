@@ -17,7 +17,7 @@ class TestCode():
 
         for k, v in self.input_dict.items():
             assert getattr(code_entity, k) == v
-        assert code_entity.id == None
+        assert code_entity.id is None
         assert code_entity.created_at
         assert code_entity.updated_at
 

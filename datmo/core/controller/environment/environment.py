@@ -125,12 +125,10 @@ class EnvironmentController(BaseController):
         if name is None:
             environment_framework = options['environment_framework']
             environment_type = options['environment_type']
-            environment_language = options['environment_language']
-            if environment_language:
-                name = "%s:%s-%s" % (environment_framework, environment_type,
-                                     environment_language)
+            if environment_language := options['environment_language']:
+                name = f"{environment_framework}:{environment_type}-{environment_language}"
             else:
-                name = "%s:%s" % (environment_framework, environment_type)
+                name = f"{environment_framework}:{environment_type}"
         create_dict = {
             "name": name,
             "description": "supported environment created by datmo"
@@ -187,9 +185,10 @@ class EnvironmentController(BaseController):
             if any source paths provided do not exist
         """
         # Validate Inputs
-        create_dict = {"model_id": self.model.id}
-        create_dict["driver_type"] = self.environment_driver.type
-
+        create_dict = {
+            "model_id": self.model.id,
+            "driver_type": self.environment_driver.type,
+        }
         validate("create_environment", dictionary)
 
         # Create temp environment folder
@@ -246,13 +245,10 @@ class EnvironmentController(BaseController):
         # Step 4: Add file collection information to create dict and check unique hash
         create_dict['file_collection_id'] = file_collection_obj.id
         create_dict['unique_hash'] = file_collection_obj.filehash
-        # Check if unique hash is unique or not.
-        # If not, DO NOT CREATE Environment and return existing Environment object
-        results = self.dal.environment.query({
-            "unique_hash": file_collection_obj.filehash
-        })
-        if results: return results[0]
-
+        if results := self.dal.environment.query(
+            {"unique_hash": file_collection_obj.filehash}
+        ):
+            return results[0]
         # Step 5: Delete the temporary directory
         shutil.rmtree(_temp_env_dir)
 
@@ -466,7 +462,7 @@ class EnvironmentController(BaseController):
                 term=match_string, force=True)
         if all:
             # Stop all tasks associated within the enclosed project
-            all_match_string = "datmo-task-" + self.model.id
+            all_match_string = f"datmo-task-{self.model.id}"
             stop_success = self.environment_driver.stop_remove_containers_by_term(
                 term=all_match_string, force=True)
         return stop_success
@@ -496,10 +492,7 @@ class EnvironmentController(BaseController):
             })
         else:
             raise ArgumentError()
-        env_exists = False
-        if environment_objs:
-            env_exists = True
-        return env_exists
+        return bool(environment_objs)
 
     def check_unstaged_changes(self):
         """Checks if there exists any unstaged changes for the environment in project environment directory.
@@ -695,8 +688,8 @@ class EnvironmentController(BaseController):
             save_hardware_file=False)
         environment_files = list_all_filepaths(
             self.environment_driver.environment_directory_path)
-        if self.exists(environment_unique_hash=env_hash) or self.exists(
-                environment_unique_hash=env_hash_no_hardware
-        ) or not environment_files:
-            return False
-        return True
+        return bool(
+            not self.exists(environment_unique_hash=env_hash)
+            and not self.exists(environment_unique_hash=env_hash_no_hardware)
+            and environment_files
+        )

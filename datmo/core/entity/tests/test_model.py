@@ -13,8 +13,8 @@ class TestModel():
 
         for k, v in self.input_dict.items():
             assert getattr(model_entity, k) == v
-        assert model_entity.id == None
-        assert model_entity.description == None
+        assert model_entity.id is None
+        assert model_entity.description is None
         assert model_entity.created_at
         assert model_entity.updated_at
 
@@ -24,7 +24,7 @@ class TestModel():
 
         for k, v in self.input_dict.items():
             assert getattr(model_entity, k) == v
-        assert model_entity.description == None
+        assert model_entity.description is None
         assert model_entity.created_at
         assert model_entity.updated_at
 

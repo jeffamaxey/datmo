@@ -48,7 +48,7 @@ from datmo.core.util.exceptions import (ProjectNotInitialized,
 from datmo.core.util.misc_functions import pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -82,23 +82,23 @@ class TestSnapshotCommand():
         self.config_filepath = os.path.join(self.snapshot_command.home,
                                             "config.json")
         with open(self.config_filepath, "wb") as f:
-            f.write(to_bytes(str("{}")))
+            f.write(to_bytes("{}"))
 
         # Create stats file
         self.stats_filepath = os.path.join(self.snapshot_command.home,
                                            "stats.json")
         with open(self.stats_filepath, "wb") as f:
-            f.write(to_bytes(str("{}")))
+            f.write(to_bytes("{}"))
 
         # Create test file
         self.filepath = os.path.join(self.snapshot_command.home, "file.txt")
         with open(self.filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Create another test file
         self.filepath_2 = os.path.join(self.snapshot_command.home, "file2.txt")
         with open(self.filepath_2, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Create config
         self.config = 'foo:bar'
@@ -777,11 +777,11 @@ class TestSnapshotCommand():
 
         # Create config file
         with open(self.config_filepath, "wb") as f:
-            f.write(to_bytes(str('{"depth":6}')))
+            f.write(to_bytes('{"depth":6}'))
 
         # Create stats file
         with open(self.stats_filepath, "wb") as f:
-            f.write(to_bytes(str('{"acc":0.97}')))
+            f.write(to_bytes('{"acc":0.97}'))
 
         # Create snapshots to test
         self.snapshot_command.parse(
@@ -791,15 +791,15 @@ class TestSnapshotCommand():
         # Create another test file
         self.filepath_3 = os.path.join(self.snapshot_command.home, "file3.txt")
         with open(self.filepath_3, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Create config file
         with open(self.config_filepath, "wb") as f:
-            f.write(to_bytes(str('{"depth":5}')))
+            f.write(to_bytes('{"depth":5}'))
 
         # Create stats file
         with open(self.stats_filepath, "wb") as f:
-            f.write(to_bytes(str('{"acc":0.91}')))
+            f.write(to_bytes('{"acc":0.91}'))
 
         self.snapshot_command.parse(
             ["snapshot", "create", "-m", "my second snapshot"])

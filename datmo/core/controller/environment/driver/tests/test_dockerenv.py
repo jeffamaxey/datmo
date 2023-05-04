@@ -45,7 +45,7 @@ from datmo.core.util.exceptions import (
 from datmo.core.util.misc_functions import check_docker_inactive, pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -62,13 +62,13 @@ class TestDockerEnv():
         os.makedirs(os.path.join(self.temp_dir, ".datmo"))
         # Test the default parameters
         self.docker_environment_driver = \
-            DockerEnvironmentDriver(self.temp_dir, ".datmo")
+                DockerEnvironmentDriver(self.temp_dir, ".datmo")
         self.image_name = str(uuid.uuid1())
         self.random_text = str(uuid.uuid1())
         self.dockerfile_path = os.path.join(self.temp_dir, "Dockerfile")
         with open(self.dockerfile_path, "wb") as f:
-            f.write(to_bytes("FROM python:3.5-alpine" + os.linesep))
-            f.write(to_bytes(str("RUN echo " + self.random_text)))
+            f.write(to_bytes(f"FROM python:3.5-alpine{os.linesep}"))
+            f.write(to_bytes(str(f"RUN echo {self.random_text}")))
 
     def teardown_method(self):
         # TODO: abstract the datmo_directory_name
@@ -77,7 +77,10 @@ class TestDockerEnv():
 
     def test_instantiation(self):
         assert self.docker_environment_driver != None
-        assert self.docker_environment_driver.docker_socket == None or "unix:///var/run/docker.sock"
+        assert (
+            self.docker_environment_driver.docker_socket is None
+            or "unix:///var/run/docker.sock"
+        )
         assert self.docker_environment_driver.docker_execpath == "docker"
         assert self.docker_environment_driver.client
         assert self.docker_environment_driver.prefix
@@ -616,7 +619,7 @@ class TestDockerEnv():
 
         result = self.docker_environment_driver.get_image(self.image_name)
         tags = result.__dict__['attrs']['RepoTags']
-        assert self.image_name + ":latest" in tags
+        assert f"{self.image_name}:latest" in tags
 
     @pytest_docker_environment_failed_instantiation(test_datmo_dir)
     def test_list_images(self):
@@ -628,13 +631,13 @@ class TestDockerEnv():
         group = [item.__dict__['attrs']['RepoTags'] for item in result]
         list_of_lists = [sublist for sublist in group if sublist]
         group_flat = [item for sublist in list_of_lists for item in sublist]
-        assert self.image_name + ":latest" in group_flat
+        assert f"{self.image_name}:latest" in group_flat
         # List images with all flag
         result = self.docker_environment_driver.list_images(all_images=True)
         group = [item.__dict__['attrs']['RepoTags'] for item in result]
         list_of_lists = [sublist for sublist in group if sublist]
         group_flat = [item for sublist in list_of_lists for item in sublist]
-        assert self.image_name + ":latest" in group_flat
+        assert f"{self.image_name}:latest" in group_flat
 
     @pytest_docker_environment_failed_instantiation(test_datmo_dir)
     def test_search_images(self):
@@ -651,7 +654,7 @@ class TestDockerEnv():
             _ = self.docker_environment_driver.remove_image("random")
         except EnvironmentExecutionError:
             failure = True
-        assert failure == True
+        assert failure
         # Failure with force
         failure = False
         try:
@@ -659,7 +662,7 @@ class TestDockerEnv():
                 "random", force=True)
         except EnvironmentExecutionError:
             failure = True
-        assert failure == True
+        assert failure
         # Without force
         self.docker_environment_driver.build_image(self.image_name,
                                                    self.dockerfile_path)
@@ -725,10 +728,8 @@ class TestDockerEnv():
     def test_extract_workspace_url(self):
         # TODO: test with all variables provided
         with open(self.dockerfile_path, "wb") as f:
-            f.write(
-                to_bytes(
-                    "FROM datmo/python-base:cpu-py27-notebook" + os.linesep))
-            f.write(to_bytes(str("RUN echo " + self.random_text)))
+            f.write(to_bytes(f"FROM datmo/python-base:cpu-py27-notebook{os.linesep}"))
+            f.write(to_bytes(str(f"RUN echo {self.random_text}")))
         self.docker_environment_driver.build_image(self.image_name,
                                                    self.dockerfile_path)
 
@@ -743,7 +744,7 @@ class TestDockerEnv():
         @timeout_decorator.timeout(20, use_signals=False)
         def timed_run(self):
             return_code, container_id = \
-                self.docker_environment_driver.run_container(self.image_name,
+                    self.docker_environment_driver.run_container(self.image_name,
                                                              name=random_container_id,
                                                              command=['jupyter', 'notebook', '--allow-root'])
             return return_code, container_id
@@ -768,7 +769,7 @@ class TestDockerEnv():
         # Test when there is no container being run
         workspace_url = self.docker_environment_driver.extract_workspace_url(
             self.image_name, "notebook")
-        assert workspace_url == None
+        assert workspace_url is None
 
         # teardown container
         self.docker_environment_driver.stop(random_container_id, force=True)
@@ -820,7 +821,7 @@ class TestDockerEnv():
             _ = self.docker_environment_driver.remove_container("random")
         except EnvironmentExecutionError:
             failure = True
-        assert failure == True
+        assert failure
         # Failure random container id (force)
         failure = False
         try:
@@ -828,7 +829,7 @@ class TestDockerEnv():
                 "random", force=True)
         except EnvironmentExecutionError:
             failure = True
-        assert failure == True
+        assert failure
         # Without force
         self.docker_environment_driver.build_image(self.image_name,
                                                    self.dockerfile_path)
@@ -964,8 +965,8 @@ class TestDockerEnv():
         # Test 2: With workspaces on datmo base image
         os.remove(output_dockerfile_path)
         with open(input_dockerfile_path, "wb") as f:
-            f.write(to_bytes("FROM datmo/python-base:cpu-py27" + os.linesep))
-            f.write(to_bytes(str("RUN echo " + self.random_text)))
+            f.write(to_bytes(f"FROM datmo/python-base:cpu-py27{os.linesep}"))
+            f.write(to_bytes(str(f"RUN echo {self.random_text}")))
         result = self.docker_environment_driver.create_datmo_definition(
             input_dockerfile_path,
             output_dockerfile_path,
@@ -981,7 +982,7 @@ class TestDockerEnv():
         os.remove(output_dockerfile_path)
         with open(input_dockerfile_path, "wb") as f:
             f.write(to_bytes("FROM datmo/python-base:cpu-py27" + "\n"))
-            f.write(to_bytes(str("RUN echo " + self.random_text)))
+            f.write(to_bytes(str(f"RUN echo {self.random_text}")))
         result = self.docker_environment_driver.create_datmo_definition(
             input_dockerfile_path,
             output_dockerfile_path,

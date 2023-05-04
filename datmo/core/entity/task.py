@@ -173,22 +173,19 @@ class Task():
         final_str = '\033[94m' + "task " + self.id + os.linesep + '\033[0m'
         table_data = []
         if self.status:
-            table_data.append(["Status", "-> " + self.status])
+            table_data.append(["Status", f"-> {self.status}"])
         if self.start_time:
-            table_data.append(
-                ["Start Time", "-> " + prettify_datetime(self.start_time)])
+            table_data.append(["Start Time", f"-> {prettify_datetime(self.start_time)}"])
         if self.end_time:
-            table_data.append(
-                ["End Time", "-> " + prettify_datetime(self.end_time)])
+            table_data.append(["End Time", f"-> {prettify_datetime(self.end_time)}"])
         if self.duration:
-            table_data.append(
-                ["Duration", "-> " + str(self.duration) + " seconds"])
+            table_data.append(["Duration", f"-> {str(self.duration)} seconds"])
         # Outputs
         if self.logs:
             table_data.append(
                 ["Logs", "-> Use task log to view or download logs"])
         if self.results:
-            table_data.append(["Results", "-> " + str(self.results)])
+            table_data.append(["Results", f"-> {str(self.results)}"])
         final_str = final_str + format_table(table_data)
         if self.command:
             final_str = final_str + os.linesep + "    " + self.command + os.linesep + os.linesep
@@ -199,9 +196,8 @@ class Task():
 
     def to_dictionary(self):
         attr_dict = self.__dict__
-        pruned_attr_dict = {
+        return {
             attr: val
             for attr, val in attr_dict.items()
             if not callable(getattr(self, attr)) and not attr.startswith("__")
         }
-        return pruned_attr_dict

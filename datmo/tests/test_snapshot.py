@@ -35,7 +35,7 @@ from datmo.core.util.exceptions import (InvalidProjectPath,
 from datmo.core.util.misc_functions import pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -69,8 +69,8 @@ class TestSnapshotModule():
         for k, v in self.input_dict.items():
             if k != "file_collection_id":
                 assert getattr(snapshot_entity, k) == v
-        assert snapshot_entity.task_id == None
-        assert snapshot_entity.label == None
+        assert snapshot_entity.task_id is None
+        assert snapshot_entity.label is None
         assert snapshot_entity.created_at
 
     def test_create(self):
@@ -279,7 +279,7 @@ class TestSnapshotModule():
         # list snapshots with filter of none
         snapshot_list_4 = ls(filter="test3")
 
-        assert len(list(snapshot_list_4)) == 0
+        assert not list(snapshot_list_4)
 
     def __setup(self):
         # Create a snapshot with default params and files to commit
@@ -445,5 +445,5 @@ class TestSnapshotModule():
     def test_snapshot_entity_str(self):
         snapshot_entity = self.__setup()
         for k in self.input_dict:
-            if k != "model_id" and k != "file_collection_id":
+            if k not in ["model_id", "file_collection_id"]:
                 assert str(snapshot_entity.__dict__[k]) in str(snapshot_entity)

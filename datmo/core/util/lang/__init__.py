@@ -5,5 +5,5 @@ import importlib
 
 
 def get_lang(locale='en'):
-    module = importlib.import_module('datmo.core.util.lang.' + locale)
+    module = importlib.import_module(f'datmo.core.util.lang.{locale}')
     return getattr(module, 'get_messages')()

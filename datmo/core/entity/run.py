@@ -177,9 +177,7 @@ class Run():
         """
         snapshot_controller = SnapshotController()
         snapshot_id = self.after_snapshot_id if self.after_snapshot_id else self.before_snapshot_id
-        snapshot_obj = snapshot_controller.get(
-            snapshot_id) if snapshot_id else None
-        return snapshot_obj
+        return snapshot_controller.get(snapshot_id) if snapshot_id else None
 
     def get_environment_id(self):
         """Returns the environment id for the run
@@ -229,31 +227,27 @@ class Run():
         final_str = '\033[94m' + "run " + self.id + os.linesep + '\033[0m'
         table_data = []
         if self.status:
-            table_data.append(["Status", "-> " + self.status])
+            table_data.append(["Status", f"-> {self.status}"])
         if self.start_time:
-            table_data.append(
-                ["Start Time", "-> " + prettify_datetime(self.start_time)])
+            table_data.append(["Start Time", f"-> {prettify_datetime(self.start_time)}"])
         if self.end_time:
-            table_data.append(
-                ["End Time", "-> " + prettify_datetime(self.end_time)])
+            table_data.append(["End Time", f"-> {prettify_datetime(self.end_time)}"])
         if self.duration:
-            table_data.append(
-                ["Duration", "-> " + str(self.duration) + " seconds"])
+            table_data.append(["Duration", f"-> {str(self.duration)} seconds"])
         # Outputs
         if self.logs:
             table_data.append(
                 ["Logs", "-> Use task log to view or download logs"])
         if self.config:
-            table_data.append(["Config", "-> " + str(self.config)])
+            table_data.append(["Config", f"-> {str(self.config)}"])
         if self.results:
-            table_data.append(["Results", "-> " + str(self.results)])
+            table_data.append(["Results", f"-> {str(self.results)}"])
         if not self.files:
             table_data.append(["Files", "-> None"])
         else:
-            table_data.append(["Files", "-> " + self.files[0].name])
+            table_data.append(["Files", f"-> {self.files[0].name}"])
             if len(list(self.files)) > 1:
-                for f in self.files[1:]:
-                    table_data.append(["     ", "-> " + f.name])
+                table_data.extend(["     ", f"-> {f.name}"] for f in self.files[1:])
         final_str = final_str + format_table(table_data)
         final_str = final_str + os.linesep + "    " + self.command + os.linesep + os.linesep
         return final_str

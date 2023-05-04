@@ -34,7 +34,7 @@ from datmo.core.util.exceptions import EntityNotFound, TaskRunError, \
 from datmo.core.util.misc_functions import check_docker_inactive, pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -306,7 +306,7 @@ class TestTaskController():
         assert task_obj.id == updated_task_obj.id
 
         assert updated_task_obj.before_snapshot_id
-        assert updated_task_obj.ports == None
+        assert updated_task_obj.ports is None
         assert updated_task_obj.interactive == False
         assert updated_task_obj.task_dirpath
         assert updated_task_obj.log_filepath
@@ -394,7 +394,7 @@ class TestTaskController():
         assert task_obj_2.id == updated_task_obj_2.id
 
         assert updated_task_obj_2.before_snapshot_id
-        assert updated_task_obj_2.ports == None
+        assert updated_task_obj_2.ports is None
         assert updated_task_obj_2.interactive == False
         assert updated_task_obj_2.task_dirpath
         assert updated_task_obj_2.log_filepath
@@ -449,7 +449,7 @@ class TestTaskController():
 
         assert isinstance(updated_task_obj_2, Task)
         assert updated_task_obj_2.before_snapshot_id
-        assert updated_task_obj_2.ports == None
+        assert updated_task_obj_2.ports is None
         assert updated_task_obj_2.interactive == False
         assert updated_task_obj_2.task_dirpath
         assert updated_task_obj_2.log_filepath
@@ -528,7 +528,7 @@ class TestTaskController():
 
         assert isinstance(updated_task_obj_3, Task)
         assert updated_task_obj_3.before_snapshot_id
-        assert updated_task_obj_3.ports == None
+        assert updated_task_obj_3.ports is None
         assert updated_task_obj_3.interactive == False
         assert updated_task_obj_3.task_dirpath
         assert updated_task_obj_3.log_filepath
@@ -609,7 +609,7 @@ class TestTaskController():
 
         assert isinstance(updated_task_obj_4, Task)
         assert updated_task_obj_4.before_snapshot_id
-        assert updated_task_obj_4.ports == None
+        assert updated_task_obj_4.ports is None
         assert updated_task_obj_4.interactive == False
         assert updated_task_obj_4.task_dirpath
         assert updated_task_obj_4.log_filepath
@@ -851,8 +851,7 @@ class TestTaskController():
         except EntityNotFound:
             thrown = True
 
-        assert result == True and \
-               thrown == True
+        assert result == True and thrown
 
     @pytest_docker_environment_failed_instantiation(test_datmo_dir)
     def test_stop_failure(self):

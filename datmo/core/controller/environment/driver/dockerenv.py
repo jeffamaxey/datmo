@@ -84,9 +84,8 @@ class DockerEnvironmentDriver(EnvironmentDriver):
                  docker_execpath="docker",
                  docker_socket=None):
         super(DockerEnvironmentDriver, self).__init__()
-        if not docker_socket:
-            if platform.system() != "Windows":
-                docker_socket = "unix:///var/run/docker.sock"
+        if not docker_socket and platform.system() != "Windows":
+            docker_socket = "unix:///var/run/docker.sock"
         self.root = root
         # Check if filepath exists
         if not os.path.exists(self.root):
@@ -148,7 +147,7 @@ class DockerEnvironmentDriver(EnvironmentDriver):
         # Initiate Docker execution
         try:
             self.info = self.client.info()
-            self._is_connected = True if self.info["Images"] != None else False
+            self._is_connected = self.info["Images"] != None
         except Exception:
             raise EnvironmentConnectFailed(
                 __("error", "controller.environment.driver.docker.__init__",
@@ -182,8 +181,7 @@ class DockerEnvironmentDriver(EnvironmentDriver):
             raise FileStructureError(
                 __("error",
                    "controller.file.driver.local.list_file_collections"))
-        environment_files_list = os.listdir(self.environment_directory_path)
-        return environment_files_list
+        return os.listdir(self.environment_directory_path)
 
     # Other functions
     def get_environment_types(self):
@@ -191,16 +189,17 @@ class DockerEnvironmentDriver(EnvironmentDriver):
         return list(self.docker_config["environment_types"])
 
     def get_supported_frameworks(self, environment_type):
-        # To get the current environments
-        environment_names = []
-        for environment_name in self.docker_config["environment_types"][
-                environment_type]["environment_frameworks"]:
-            environment_names.append([
+        return [
+            [
                 environment_name,
                 self.docker_config["environment_types"][environment_type][
-                    "environment_frameworks"][environment_name]["info"]
-            ])
-        return environment_names
+                    "environment_frameworks"
+                ][environment_name]["info"],
+            ]
+            for environment_name in self.docker_config["environment_types"][
+                environment_type
+            ]["environment_frameworks"]
+        ]
 
     def get_supported_languages(self, environment_type, environment_framework):
         # To get the current environments
@@ -241,14 +240,16 @@ class DockerEnvironmentDriver(EnvironmentDriver):
         with open(definition_filepath, "wb") as f:
             if environment_language:
                 f.write(
-                    to_bytes("FROM datmo/%s:%s-%s%s%s" %
-                             (environment_framework, environment_type,
-                              environment_language, os.linesep, os.linesep)))
+                    to_bytes(
+                        f"FROM datmo/{environment_framework}:{environment_type}-{environment_language}{os.linesep}{os.linesep}"
+                    )
+                )
             else:
                 f.write(
-                    to_bytes("FROM datmo/%s:%s%s%s" %
-                             (environment_framework, environment_type,
-                              os.linesep, os.linesep)))
+                    to_bytes(
+                        f"FROM datmo/{environment_framework}:{environment_type}{os.linesep}{os.linesep}"
+                    )
+                )
         return True
 
     def create(self, path=None, output_path=None, workspace=None):
@@ -256,7 +257,7 @@ class DockerEnvironmentDriver(EnvironmentDriver):
             path = os.path.join(self.root, "Dockerfile")
         if not output_path:
             directory, filename = os.path.split(path)
-            output_path = os.path.join(directory, "datmo" + filename)
+            output_path = os.path.join(directory, f"datmo{filename}")
         if not os.path.isfile(path):
             raise EnvironmentDoesNotExist(
                 __("error", "controller.environment.driver.docker.create.dne",
@@ -356,7 +357,7 @@ class DockerEnvironmentDriver(EnvironmentDriver):
         list
             List of tags available for that docker repo
         """
-        docker_repository_tag_cmd = "wget -q https://registry.hub.docker.com/v1/repositories/" + repo_name + "/tags -O -"
+        docker_repository_tag_cmd = f"wget -q https://registry.hub.docker.com/v1/repositories/{repo_name}/tags -O -"
         try:
             process = subprocess.Popen(
                 docker_repository_tag_cmd,
@@ -375,10 +376,7 @@ class DockerEnvironmentDriver(EnvironmentDriver):
                 __("error", "controller.environment.driver.docker.get_tags",
                    str(e)))
         repository_tags = ast.literal_eval(string_repository_tags)
-        list_tag_names = []
-        for repository_tag in repository_tags:
-            list_tag_names.append(repository_tag["name"])
-        return list_tag_names
+        return [repository_tag["name"] for repository_tag in repository_tags]
 
     # running daemon needed
     def build_image(self, tag, definition_path="Dockerfile", workspace=None):
@@ -405,25 +403,18 @@ class DockerEnvironmentDriver(EnvironmentDriver):
         """
         try:
             docker_shell_cmd_list = list(self.prefix)
-            docker_shell_cmd_list.append("build")
-
-            # Passing tag name for the image
-            docker_shell_cmd_list.append("-t")
-            docker_shell_cmd_list.append(tag)
-
+            docker_shell_cmd_list.extend(("build", "-t", tag))
             # Passing path of Dockerfile
             # Creating datmoDockerfile for new build
             dockerfile_dirpath = os.path.split(definition_path)[0]
             input_dockerfile = os.path.split(definition_path)[1]
-            output_dockerfile_path = os.path.join(dockerfile_dirpath,
-                                                  "datmo%s" % input_dockerfile)
+            output_dockerfile_path = os.path.join(
+                dockerfile_dirpath, f"datmo{input_dockerfile}"
+            )
             self.create(definition_path, output_dockerfile_path, workspace)
-            docker_shell_cmd_list.append("-f")
-            docker_shell_cmd_list.append(output_dockerfile_path)
-            docker_shell_cmd_list.append(str(dockerfile_dirpath))
-
-            # Remove intermediate containers after a successful build
-            docker_shell_cmd_list.append("--rm")
+            docker_shell_cmd_list.extend(
+                ("-f", output_dockerfile_path, str(dockerfile_dirpath), "--rm")
+            )
             process_returncode = subprocess.Popen(docker_shell_cmd_list).wait()
             if process_returncode == 0:
                 return True
@@ -512,11 +503,9 @@ class DockerEnvironmentDriver(EnvironmentDriver):
         """
         if workspace in ['notebook', 'jupyterlab']:
             docker_shell_cmd_list = list(self.prefix)
-            docker_shell_cmd_list.append("exec")
-            docker_shell_cmd_list.append(container_name)
-            docker_shell_cmd_list.append("jupyter")
-            docker_shell_cmd_list.append("notebook")
-            docker_shell_cmd_list.append("list")
+            docker_shell_cmd_list.extend(
+                ("exec", container_name, "jupyter", "notebook", "list")
+            )
             workspace_url = None
             timeout_count = 0
             while workspace_url is None and timeout_count < 10:
@@ -607,12 +596,16 @@ class DockerEnvironmentDriver(EnvironmentDriver):
                 # TODO: Test this out for the API (need to verify ports work)
                 if detach:
                     command = " ".join(command) if command else command
-                    container = \
-                        self.client.containers.run(image_name, command, ports=ports,
-                                                   name=name, volumes=volumes,
-                                                   mem_limit=mem_limit,
-                                                   detach=detach, stdin_open=stdin_open)
-                    return container
+                    return self.client.containers.run(
+                        image_name,
+                        command,
+                        ports=ports,
+                        name=name,
+                        volumes=volumes,
+                        mem_limit=mem_limit,
+                        detach=detach,
+                        stdin_open=stdin_open,
+                    )
                 else:
                     command = " ".join(command) if command else command
                     logs = self.client.containers.run(
@@ -630,19 +623,11 @@ class DockerEnvironmentDriver(EnvironmentDriver):
                 docker_shell_cmd_list.append("run")
 
                 if name:
-                    docker_shell_cmd_list.append("--name")
-                    docker_shell_cmd_list.append(name)
-
+                    docker_shell_cmd_list.extend(("--name", name))
                 if runtime:
-                    docker_shell_cmd_list.append("--runtime")
-                    docker_shell_cmd_list.append(runtime)
-
+                    docker_shell_cmd_list.extend(("--runtime", runtime))
                 if mem_limit:
-                    docker_shell_cmd_list.append("-m")
-                    docker_shell_cmd_list.append(mem_limit)
-                    docker_shell_cmd_list.append("--memory-swap")
-                    docker_shell_cmd_list.append("-1")
-
+                    docker_shell_cmd_list.extend(("-m", mem_limit, "--memory-swap", "-1"))
                 if stdin_open:
                     docker_shell_cmd_list.append("-i")
 
@@ -657,16 +642,13 @@ class DockerEnvironmentDriver(EnvironmentDriver):
                     # Mounting volumes
                     for key in list(volumes):
                         docker_shell_cmd_list.append("-v")
-                        volume_mount = key + ":" + volumes[key]["bind"] + ":" + \
-                                       volumes[key]["mode"]
+                        volume_mount = (f"{key}:" + volumes[key]["bind"] + ":" + volumes[key]["mode"])
                         docker_shell_cmd_list.append(volume_mount)
 
                 if ports:
                     # Mapping ports
                     for mapping in ports:
-                        docker_shell_cmd_list.append("-p")
-                        docker_shell_cmd_list.append(mapping)
-
+                        docker_shell_cmd_list.extend(("-p", mapping))
                 docker_shell_cmd_list.append(image_name)
                 if command:
                     docker_shell_cmd_list.extend(command)
@@ -819,13 +801,11 @@ class DockerEnvironmentDriver(EnvironmentDriver):
         # TODO: split out the find containers function from stop / remove
         try:
             running_docker_container_cmd_list = list(self.prefix)
-            running_docker_container_cmd_list.extend([
-                "ps", "-a", "|", "grep",
-                "'%s'" % term, "|", "awk '{print $1}'"
-            ])
+            running_docker_container_cmd_list.extend(
+                ["ps", "-a", "|", "grep", f"'{term}'", "|", "awk '{print $1}'"]
+            )
 
-            running_docker_container_cmd_str = str(
-                " ".join(running_docker_container_cmd_list))
+            running_docker_container_cmd_str = " ".join(running_docker_container_cmd_list)
             process = subprocess.Popen(
                 running_docker_container_cmd_str,
                 shell=True,
@@ -841,10 +821,9 @@ class DockerEnvironmentDriver(EnvironmentDriver):
             if out_list_cmd:
                 docker_container_stop_cmd_list = list(self.prefix)
                 docker_container_stop_cmd_list = docker_container_stop_cmd_list + \
-                                                 ["stop", "$("] + running_docker_container_cmd_list + \
-                                                 [")"]
-                docker_container_stop_cmd_str = str(
-                    " ".join(docker_container_stop_cmd_list))
+                                                     ["stop", "$("] + running_docker_container_cmd_list + \
+                                                     [")"]
+                docker_container_stop_cmd_str = " ".join(docker_container_stop_cmd_list)
                 process = subprocess.Popen(
                     docker_container_stop_cmd_str,
                     shell=True,
@@ -863,29 +842,28 @@ class DockerEnvironmentDriver(EnvironmentDriver):
                         __("error",
                            "controller.environment.driver.docker.stop_remove_containers_by_term",
                            str(err_list_cmd)))
-                if out_list_cmd:
-                    docker_container_remove_cmd_list = list(self.prefix)
-                    if force:
-                        docker_container_remove_cmd_list = docker_container_remove_cmd_list + \
+            if out_list_cmd:
+                docker_container_remove_cmd_list = list(self.prefix)
+                if force:
+                    docker_container_remove_cmd_list = docker_container_remove_cmd_list + \
                                                            ["rm", "-f", "$("] + running_docker_container_cmd_list + \
                                                            [")"]
-                    else:
-                        docker_container_remove_cmd_list = docker_container_remove_cmd_list + \
+                else:
+                    docker_container_remove_cmd_list = docker_container_remove_cmd_list + \
                                                            ["rm", "$("] + running_docker_container_cmd_list + \
                                                            [")"]
-                    docker_container_remove_cmd_str = str(
-                        " ".join(docker_container_remove_cmd_list))
-                    process = subprocess.Popen(
-                        docker_container_remove_cmd_str,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE)
-                    _, err_list_cmd = process.communicate()
-                    if process.returncode > 0:
-                        raise EnvironmentExecutionError(
-                            __("error",
-                               "controller.environment.driver.docker.stop_remove_containers_by_term",
-                               str(err_list_cmd)))
+                docker_container_remove_cmd_str = " ".join(docker_container_remove_cmd_list)
+                process = subprocess.Popen(
+                    docker_container_remove_cmd_str,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE)
+                _, err_list_cmd = process.communicate()
+                if process.returncode > 0:
+                    raise EnvironmentExecutionError(
+                        __("error",
+                           "controller.environment.driver.docker.stop_remove_containers_by_term",
+                           str(err_list_cmd)))
         except subprocess.CalledProcessError as e:
             raise EnvironmentExecutionError(
                 __("error",
@@ -911,37 +889,34 @@ class DockerEnvironmentDriver(EnvironmentDriver):
         EnvironmentRequirementsCreateError
             error in running package manager command to extract environment requirements
         """
-        if package_manager == "pip":
-            try:
-                requirements_filepath = os.path.join(self.root,
-                                                     "datmorequirements.txt")
-                outfile_requirements = open(requirements_filepath, "wb")
-                process = subprocess.Popen(
-                    ["pip", "freeze"],
-                    cwd=self.root,
-                    stdout=outfile_requirements,
-                    stderr=subprocess.PIPE)
-                stdout, stderr = process.communicate()
-                if process.returncode > 0:
-                    raise EnvironmentRequirementsCreateError(
-                        __("error",
-                           "controller.environment.requirements.create",
-                           str(stderr)))
-            except Exception as e:
-                raise EnvironmentRequirementsCreateError(
-                    __("error", "controller.environment.requirements.create",
-                       str(e)))
-            if not os.path.isfile(requirements_filepath):
-                return None
-            return requirements_filepath
-        else:
+        if package_manager != "pip":
             raise EnvironmentRequirementsCreateError(
                 __("error", "controller.environment.requirements.create",
                    "no such package manager"))
+        try:
+            requirements_filepath = os.path.join(self.root,
+                                                 "datmorequirements.txt")
+            outfile_requirements = open(requirements_filepath, "wb")
+            process = subprocess.Popen(
+                ["pip", "freeze"],
+                cwd=self.root,
+                stdout=outfile_requirements,
+                stderr=subprocess.PIPE)
+            stdout, stderr = process.communicate()
+            if process.returncode > 0:
+                raise EnvironmentRequirementsCreateError(
+                    __("error",
+                       "controller.environment.requirements.create",
+                       str(stderr)))
+        except Exception as e:
+            raise EnvironmentRequirementsCreateError(
+                __("error", "controller.environment.requirements.create",
+                   str(e)))
+        return requirements_filepath if os.path.isfile(requirements_filepath) else None
 
     @staticmethod
     def create_default_definition(directory, language="python3"):
-        language_dockerfile = "%sDockerfile" % language
+        language_dockerfile = f"{language}Dockerfile"
         default_dockerfile_filepath = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "templates",
             language_dockerfile)
@@ -994,8 +969,7 @@ class DockerEnvironmentDriver(EnvironmentDriver):
                             to_bytes('FROM datmo/') in line.strip()
                             and workspace)
                         if to_bytes("\n") in line and bool_workspace_update:
-                            updated_line = line.strip() + to_bytes(
-                                "-%s%s" % (workspace, os.linesep))
+                            updated_line = (line.strip() + to_bytes(f"-{workspace}{os.linesep}"))
                         elif to_bytes(os.linesep) in line:
                             updated_line = line.strip() + to_bytes(os.linesep)
                         else:

@@ -178,9 +178,7 @@ class TestMiscFunctions():
 
     def test_get_datmo_temp_path(self):
         datmo_temp_path = get_datmo_temp_path(self.temp_dir)
-        exists = False
-        if os.path.isdir(datmo_temp_path):
-            exists = True
+        exists = bool(os.path.isdir(datmo_temp_path))
         assert exists
         # Test if subsequent temp dirs are different
         datmo_temp_path_1 = get_datmo_temp_path(self.temp_dir)
@@ -291,7 +289,7 @@ class TestMiscFunctions():
             failed = True
         assert failed
         # Test success absolute path and destination
-        paths = [filepath + ">new_name.txt", dirpath + ">new_dirname"]
+        paths = [f"{filepath}>new_name.txt", f"{dirpath}>new_dirname"]
         result = parse_paths(default_source_prefix, paths, dest_prefix)
         assert result[0] == [(filepath,
                               os.path.join(dest_prefix, "new_name.txt"))]
@@ -304,27 +302,17 @@ class TestMiscFunctions():
 
     def test_convert_keys_to_string(self):
         test_data = {
-            u'spam':
-                u'eggs',
-            u'foo':
-                frozenset([u'Gah!']),
-            u'bar': {
-                u'baz': 97
-            },
-            u'list': [
-                u'list', (True, u'Maybe'),
-                set([u'and', u'a', u'set', 1])
-            ]
+            u'spam': u'eggs',
+            u'foo': frozenset([u'Gah!']),
+            u'bar': {u'baz': 97},
+            u'list': [u'list', (True, u'Maybe'), {u'and', u'a', u'set', 1}],
         }
 
         converted_data = convert_keys_to_string(test_data)
 
         assert converted_data == {
-            'bar': {
-                'baz': 97
-            },
+            'bar': {'baz': 97},
             'foo': frozenset(['Gah!']),
-            'list': ['list', (True, 'Maybe'),
-                     set(['and', 'a', 'set', 1])],
-            'spam': 'eggs'
+            'list': ['list', (True, 'Maybe'), {'and', 'a', 'set', 1}],
+            'spam': 'eggs',
         }

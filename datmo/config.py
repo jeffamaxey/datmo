@@ -72,7 +72,7 @@ class Config(object):
                     DATMO_API_KEY = config_dict.get('DATMO_API_KEY', None)
 
             if MASTER_SERVER_IP:
-                END_POINT = 'http://' + MASTER_SERVER_IP + ':2083/api/v1'
+                END_POINT = f'http://{MASTER_SERVER_IP}:2083/api/v1'
             else:
                 END_POINT = None
 
@@ -82,25 +82,23 @@ class Config(object):
             self._home = home_path
 
         def get_cache_item(self, key):
-            cache_expire_key = 'cache_key_expires.' + key
-            cache_key = 'cache_key.' + key
+            cache_expire_key = f'cache_key_expires.{key}'
+            cache_key = f'cache_key.{key}'
             cache_expire_val = self.data_cache.get(cache_expire_key)
             # no cache expire val, it's not stored
-            if cache_expire_val == None:
+            if cache_expire_val is None:
                 return None
-            # return value if item has not expired
             elif int(cache_expire_val) > int(
                     datetime.datetime.now().strftime('%s')):
                 return self.data_cache.get(cache_key)
-            # expire item and return None
             else:
                 self.data_cache.remove(cache_expire_key)
                 self.data_cache.remove(cache_key)
                 return None
 
         def set_cache_item(self, key, value, duration=60):
-            cache_expire_key = 'cache_key_expires.' + key
-            cache_key = 'cache_key.' + key
+            cache_expire_key = f'cache_key_expires.{key}'
+            cache_key = f'cache_key.{key}'
             expire_val = (duration * 60) + int(
                 datetime.datetime.now().strftime('%s'))
             self.data_cache.save(cache_expire_key, expire_val)
@@ -120,7 +118,7 @@ class Config(object):
     @staticmethod
     @parameterized
     def cache_setting(method, key=None, expires_min=60, ignore_values=[]):
-        name = key if key is not None else method.__module__ + '.' + method.__name__
+        name = key if key is not None else f'{method.__module__}.{method.__name__}'
         config = Config()
 
         def fn(*args, **kw):
@@ -128,7 +126,7 @@ class Config(object):
             if cached_val is not None:
                 return cached_val
             result = method(*args, **kw)
-            if not result in ignore_values:
+            if result not in ignore_values:
                 config.set_cache_item(name, result, expires_min)
             return result
 

@@ -29,7 +29,7 @@ from datmo.cli.command.run import RunCommand
 from datmo.core.util.misc_functions import pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -59,7 +59,7 @@ class TestFlow():
         # Create test file
         self.filepath = os.path.join(self.snapshot_command.home, "file.txt")
         with open(self.filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
     def __environment_setup(self):
         self.environment_command.parse(["environment", "setup"])
@@ -75,25 +75,21 @@ class TestFlow():
         test_command = ["sh", "-c", "echo accuracy:0.45"]
         test_ports = ["8888:8888"]
         self.run_command.parse(["run", "-p", test_ports[0], test_command])
-        run_result = self.run_command.execute()
-        return run_result
+        return self.run_command.execute()
 
     def __run_ls(self):
         self.run_command.parse(["ls"])
-        run_ls_result = self.run_command.execute()
-        return run_ls_result
+        return self.run_command.execute()
 
     def __snapshot_create(self):
         test_message = "creating a snapshot"
         self.snapshot_command.parse(["snapshot", "create", "-m", test_message])
 
-        snapshot_create_result = self.snapshot_command.execute()
-        return snapshot_create_result
+        return self.snapshot_command.execute()
 
     def __snapshot_ls(self):
         self.snapshot_command.parse(["snapshot", "ls"])
-        snapshot_ls_result = self.snapshot_command.execute()
-        return snapshot_ls_result
+        return self.snapshot_command.execute()
 
     @pytest_docker_environment_failed_instantiation(test_datmo_dir)
     def test_flow_1(self):

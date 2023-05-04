@@ -44,8 +44,7 @@ class SnapshotCommand(ProjectCommand):
             # Create a new core snapshot object
             snapshot_task_obj = self.snapshot_controller.create_from_task(
                 message, run_id, label=label)
-            self.cli_helper.echo(
-                "Created snapshot id: %s" % snapshot_task_obj.id)
+            self.cli_helper.echo(f"Created snapshot id: {snapshot_task_obj.id}")
             return snapshot_task_obj
         else:
             # creating snapshot without task id
@@ -78,7 +77,7 @@ class SnapshotCommand(ProjectCommand):
                 config_list = snapshot_dict["config"]
                 for item in config_list:
                     item_parsed_dict = parse_cli_key_value(item, 'config')
-                    config.update(item_parsed_dict)
+                    config |= item_parsed_dict
                 snapshot_dict["config"] = config
 
             # Stats
@@ -95,7 +94,7 @@ class SnapshotCommand(ProjectCommand):
                 stats_list = snapshot_dict["stats"]
                 for item in stats_list:
                     item_parsed_dict = parse_cli_key_value(item, 'stats')
-                    stats.update(item_parsed_dict)
+                    stats |= item_parsed_dict
                 snapshot_dict["stats"] = stats
 
             optional_args = ["message", "label"]
@@ -133,23 +132,19 @@ class SnapshotCommand(ProjectCommand):
         config = snapshot_obj.config
         stats = snapshot_obj.stats
 
-        # extracting config
-        update_config_list = kwargs.get('config', None)
-        if update_config_list:
+        if update_config_list := kwargs.get('config', None):
             update_config = {}
             for item in update_config_list:
                 item_parsed_dict = parse_cli_key_value(item, 'config')
-                update_config.update(item_parsed_dict)
+                update_config |= item_parsed_dict
             # updating config
             config.update(update_config)
 
-        # extracting stats
-        update_stats_list = kwargs.get('stats', None)
-        if update_stats_list:
+        if update_stats_list := kwargs.get('stats', None):
             update_stats = {}
             for item in update_stats_list:
                 item_parsed_dict = parse_cli_key_value(item, 'stats')
-                update_stats.update(item_parsed_dict)
+                update_stats |= item_parsed_dict
             # updating stats
             stats.update(update_stats)
 
@@ -194,8 +189,8 @@ class SnapshotCommand(ProjectCommand):
                 snapshot_dict_printable = snapshot_obj.to_dictionary(
                     stringify=True)
                 printable_snapshot_id = snapshot_dict_printable['id'] if current_snapshot_id is not None and \
-                                                                         snapshot_dict_printable['id'] != current_snapshot_id \
-                    else "(current) " + snapshot_dict_printable['id']
+                                                                             snapshot_dict_printable['id'] != current_snapshot_id \
+                        else "(current) " + snapshot_dict_printable['id']
                 item_dict_list.append({
                     "id": printable_snapshot_id,
                     "created at": snapshot_dict_printable['created_at'],
@@ -215,8 +210,8 @@ class SnapshotCommand(ProjectCommand):
                 snapshot_dict_printable = snapshot_obj.to_dictionary(
                     stringify=True)
                 printable_snapshot_id = snapshot_dict_printable['id'] if current_snapshot_id is not None and \
-                                                           snapshot_dict_printable['id'] != current_snapshot_id \
-                    else "(current) " + snapshot_dict_printable['id']
+                                                               snapshot_dict_printable['id'] != current_snapshot_id \
+                        else "(current) " + snapshot_dict_printable['id']
                 item_dict_list.append({
                     "id": printable_snapshot_id,
                     "created at": snapshot_dict_printable['created_at'],
@@ -234,7 +229,8 @@ class SnapshotCommand(ProjectCommand):
                     current_time - epoch_time).total_seconds() * 1000.0
                 download_path = os.path.join(
                     self.snapshot_controller.home,
-                    "snapshot_ls_" + str(current_time_unix_time_ms))
+                    f"snapshot_ls_{str(current_time_unix_time_ms)}",
+                )
             self.cli_helper.print_items(
                 header_list,
                 item_dict_list,
@@ -249,8 +245,7 @@ class SnapshotCommand(ProjectCommand):
     def checkout(self, **kwargs):
         self.snapshot_controller = SnapshotController()
         snapshot_id = kwargs.get('id')
-        checkout_success = self.snapshot_controller.checkout(snapshot_id)
-        if checkout_success:
+        if checkout_success := self.snapshot_controller.checkout(snapshot_id):
             self.cli_helper.echo(
                 __("info", "cli.snapshot.checkout.success", snapshot_id))
         return self.snapshot_controller.checkout(snapshot_id)
@@ -283,10 +278,16 @@ class SnapshotCommand(ProjectCommand):
                 if isinstance(value_2, dict): alldict.append(value_2)
                 allkey = set().union(*alldict)
                 for key in allkey:
-                    key_value_1 = "%s: %s" % (key, value_1[key]) if value_1 != "N/A" and value_1.get(key, None) \
+                    key_value_1 = (
+                        f"{key}: {value_1[key]}"
+                        if value_1 != "N/A" and value_1.get(key, None)
                         else "N/A"
-                    key_value_2 = "%s: %s" % (key, value_2[key]) if value_2 != "N/A" and value_2.get(key, None) \
+                    )
+                    key_value_2 = (
+                        f"{key}: {value_2[key]}"
+                        if value_2 != "N/A" and value_2.get(key, None)
                         else "N/A"
+                    )
                     table_data.append(
                         [attribute, key_value_1, "->", key_value_2])
             else:

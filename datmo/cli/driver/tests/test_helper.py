@@ -37,8 +37,7 @@ class TestHelper():
 
     def setup_method(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -90,7 +89,7 @@ class TestHelper():
             return self.cli.prompt("what is this test?")
 
         i = dummy()
-        assert i == None
+        assert i is None
 
         # TODO: figure out how to replace "print" with a testable function
         # https://stackoverflow.com/questions/4219717/how-to-assert-output-with-nosetest-unittest-in-python
@@ -120,9 +119,7 @@ class TestHelper():
             header_list=header_list,
             item_dict_list=item_dict_list,
             print_format="csv")
-        assert result == "foo,bar%syo,hello%scool,N/A%s" % (os.linesep,
-                                                            os.linesep,
-                                                            os.linesep)
+        assert result == f"foo,bar{os.linesep}yo,hello{os.linesep}cool,N/A{os.linesep}"
         assert "there" not in result
         # Test without download in random print_format
         result = self.cli.print_items(
@@ -262,7 +259,7 @@ class TestHelper():
 
     def test_prompt_validator(self):
         def validate_y(val):
-            return True if val == "y" else False
+            return val == "y"
 
         # Test success
         test_input = "y"

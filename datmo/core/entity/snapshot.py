@@ -113,18 +113,22 @@ class Snapshot():
             final_str = final_str + '\033[94m' + ")" + '\033[0m' + os.linesep
         else:
             final_str = '\033[94m' + "snapshot " + self.id + '\033[0m' + os.linesep
-        final_str = final_str + "Date: " + prettify_datetime(
-            self.created_at) + os.linesep
+        final_str = (
+            f"{final_str}Date: {prettify_datetime(self.created_at)}{os.linesep}"
+        )
         table_data = []
         if self.task_id:
-            table_data.append(["Task", "-> " + self.task_id])
-        table_data.append(["Visible", "-> " + str(self.visible)])
-        # Components
-        table_data.append(["Code", "-> " + self.code_id])
-        table_data.append(["Environment", "-> " + self.environment_id])
-        table_data.append(["Files", "-> " + self.file_collection_id])
-        table_data.append(["Config", "-> " + str(self.config)])
-        table_data.append(["Stats", "-> " + str(self.stats)])
+            table_data.append(["Task", f"-> {self.task_id}"])
+        table_data.extend(
+            (
+                ["Visible", f"-> {str(self.visible)}"],
+                ["Code", f"-> {self.code_id}"],
+                ["Environment", f"-> {self.environment_id}"],
+                ["Files", f"-> {self.file_collection_id}"],
+                ["Config", f"-> {str(self.config)}"],
+                ["Stats", f"-> {str(self.stats)}"],
+            )
+        )
         final_str = final_str + format_table(table_data)
         final_str = final_str + os.linesep + "    " + self.message + os.linesep + os.linesep
         return final_str

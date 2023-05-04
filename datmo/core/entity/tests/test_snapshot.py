@@ -25,9 +25,9 @@ class TestSnapshot():
 
         for k, v in self.input_dict.items():
             assert getattr(snapshot_entity, k) == v
-        assert snapshot_entity.id == None
-        assert snapshot_entity.task_id == None
-        assert snapshot_entity.label == None
+        assert snapshot_entity.id is None
+        assert snapshot_entity.task_id is None
+        assert snapshot_entity.label is None
         assert snapshot_entity.visible == True
         assert snapshot_entity.created_at
         assert snapshot_entity.updated_at
@@ -38,8 +38,8 @@ class TestSnapshot():
 
         for k, v in self.input_dict.items():
             assert getattr(snapshot_entity, k) == v
-        assert snapshot_entity.task_id == None
-        assert snapshot_entity.label == None
+        assert snapshot_entity.task_id is None
+        assert snapshot_entity.label is None
         assert snapshot_entity.visible == True
         assert snapshot_entity.created_at
         assert snapshot_entity.updated_at

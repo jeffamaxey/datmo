@@ -42,23 +42,18 @@ class RunCommand(ProjectCommand):
             "interactive": kwargs['interactive'],
             "mem_limit": kwargs['mem_limit']
         }
-        if not isinstance(kwargs['cmd'], list):
-            if platform.system() == "Windows":
-                task_dict['command'] = kwargs['cmd']
-            elif isinstance(kwargs['cmd'], basestring):
-                task_dict['command_list'] = shlex.split(kwargs['cmd'])
-        else:
+        if isinstance(kwargs['cmd'], list):
             task_dict['command_list'] = kwargs['cmd']
 
+        elif platform.system() == "Windows":
+            task_dict['command'] = kwargs['cmd']
+        elif isinstance(kwargs['cmd'], basestring):
+            task_dict['command_list'] = shlex.split(kwargs['cmd'])
         data_paths = kwargs['data']
         # Run task and return Task object result
         task_obj = self.task_run_helper(
             task_dict, snapshot_dict, "cli.run.run", data_paths=data_paths)
-        if not task_obj:
-            return False
-        # Creating the run object
-        run_obj = Run(task_obj)
-        return run_obj
+        return Run(task_obj) if task_obj else False
 
     @Helper.notify_no_project_found
     def ls(self, **kwargs):
@@ -98,7 +93,8 @@ class RunCommand(ProjectCommand):
                 current_time_unix_time_ms = (
                     current_time - epoch_time).total_seconds() * 1000.0
                 download_path = os.path.join(
-                    os.getcwd(), "run_ls_" + str(current_time_unix_time_ms))
+                    os.getcwd(), f"run_ls_{str(current_time_unix_time_ms)}"
+                )
             self.cli_helper.print_items(
                 header_list,
                 item_dict_list,
@@ -121,10 +117,12 @@ class RunCommand(ProjectCommand):
         # Create the run obj
         run_obj = Run(task_obj)
         # Select the initial snapshot if it's a script else the final snapshot
-        initial = True if run_obj.type == 'script' else False
+        initial = run_obj.type == 'script'
         environment_id = run_obj.environment_id
         command = task_obj.command_list
-        snapshot_id = run_obj.core_snapshot_id if not initial else run_obj.before_snapshot_id
+        snapshot_id = (
+            run_obj.before_snapshot_id if initial else run_obj.core_snapshot_id
+        )
 
         # Checkout to the core snapshot id before rerunning the task
         self.snapshot_controller = SnapshotController()
@@ -140,8 +138,7 @@ class RunCommand(ProjectCommand):
 
         # Rerunning the task
         # Create input dictionary for the new task
-        snapshot_dict = {}
-        snapshot_dict["environment_id"] = environment_id
+        snapshot_dict = {"environment_id": environment_id}
         task_dict = {
             "ports": task_obj.ports,
             "interactive": task_obj.interactive,
@@ -154,11 +151,7 @@ class RunCommand(ProjectCommand):
         # Run task and return Task object result
         new_task_obj = self.task_run_helper(task_dict, snapshot_dict,
                                             "cli.run.run")
-        if not new_task_obj:
-            return False
-        # Creating the run object
-        new_run_obj = Run(new_task_obj)
-        return new_run_obj
+        return Run(new_task_obj) if new_task_obj else False
 
     @Helper.notify_environment_active(TaskController)
     @Helper.notify_no_project_found

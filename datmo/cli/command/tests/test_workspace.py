@@ -39,7 +39,7 @@ from datmo.cli.command.run import RunCommand
 from datmo.core.util.misc_functions import pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -67,9 +67,7 @@ class TestWorkspace():
         # Create environment_driver definition
         self.env_def_path = os.path.join(self.temp_dir, "Dockerfile")
         with open(self.env_def_path, "wb") as f:
-            f.write(
-                to_bytes(
-                    str("FROM datmo/python-base:cpu-py27%s" % os.linesep)))
+            f.write(to_bytes(str(f"FROM datmo/python-base:cpu-py27{os.linesep}")))
 
     def teardown_method(self):
         pass
@@ -120,10 +118,8 @@ class TestWorkspace():
         # creating and passing environment id
         random_text = str(uuid.uuid1())
         with open(self.env_def_path, "wb") as f:
-            f.write(
-                to_bytes(
-                    str("FROM datmo/python-base:cpu-py27%s" % os.linesep)))
-            f.write(to_bytes(str("RUN echo " + random_text)))
+            f.write(to_bytes(str(f"FROM datmo/python-base:cpu-py27{os.linesep}")))
+            f.write(to_bytes(str(f"RUN echo {random_text}")))
 
         self.environment_command.parse([
             "environment", "create", "--name", "test", "--description",
@@ -198,10 +194,8 @@ class TestWorkspace():
         # creating and passing environment id
         random_text = str(uuid.uuid1())
         with open(self.env_def_path, "wb") as f:
-            f.write(
-                to_bytes(
-                    str("FROM datmo/python-base:cpu-py27%s" % os.linesep)))
-            f.write(to_bytes(str("RUN echo " + random_text)))
+            f.write(to_bytes(str(f"FROM datmo/python-base:cpu-py27{os.linesep}")))
+            f.write(to_bytes(str(f"RUN echo {random_text}")))
 
         self.environment_command.parse([
             "environment", "create", "--name", "test", "--description",
@@ -276,7 +270,7 @@ class TestWorkspace():
         # Update environment_driver definition
         self.env_def_path = os.path.join(self.temp_dir, "Dockerfile")
         with open(self.env_def_path, "wb") as f:
-            f.write(to_bytes(str("FROM datmo/r-base:cpu%s" % os.linesep)))
+            f.write(to_bytes(str(f"FROM datmo/r-base:cpu{os.linesep}")))
 
         test_mem_limit = "4g"
         # test single ports option before command
@@ -317,8 +311,8 @@ class TestWorkspace():
         # creating and passing environment id
         random_text = str(uuid.uuid1())
         with open(self.env_def_path, "wb") as f:
-            f.write(to_bytes(str("FROM datmo/r-base:cpu%s" % os.linesep)))
-            f.write(to_bytes(str("RUN echo " + random_text)))
+            f.write(to_bytes(str(f"FROM datmo/r-base:cpu{os.linesep}")))
+            f.write(to_bytes(str(f"RUN echo {random_text}")))
 
         self.environment_command.parse([
             "environment", "create", "--name", "test", "--description",

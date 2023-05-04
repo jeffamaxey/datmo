@@ -83,13 +83,11 @@ class FileCollectionController(BaseController):
 
         # Parse paths to create collection and add in filehash
         create_dict['filehash'], create_dict['file_path_map'], create_dict['directory_path_map'] =\
-            self.file_driver.create_collection(paths)
-        # If file collection with filehash exists, return it
-        results = self.dal.file_collection.query({
-            "filehash": create_dict['filehash']
-        })
-        if results: return results[0]
-
+                self.file_driver.create_collection(paths)
+        if results := self.dal.file_collection.query(
+            {"filehash": create_dict['filehash']}
+        ):
+            return results[0]
         # Add in path of the collection created above
         create_dict['path'] = self.file_driver.get_relative_collection_path(
             create_dict['filehash'])
@@ -162,10 +160,7 @@ class FileCollectionController(BaseController):
             file_collection_objs = self.dal.file_collection.query({
                 "filehash": file_hash
             })
-        file_collection_exists = False
-        if file_collection_objs:
-            file_collection_exists = True
-        return file_collection_exists
+        return bool(file_collection_objs)
 
     def _calculate_project_files_hash(self):
         """Return the file hash of the file collections filepaths for project files directory.
@@ -201,9 +196,7 @@ class FileCollectionController(BaseController):
         file_hash = self._calculate_project_files_hash()
         files = list_all_filepaths(self.file_driver.files_directory)
         # if already exists in the db or is an empty directory
-        if self.exists(file_hash=file_hash) or not files:
-            return False
-        return True
+        return bool(not self.exists(file_hash=file_hash) and files)
 
     def check_unstaged_changes(self):
         """Checks if there exists any unstaged changes for the file collection in the files directory

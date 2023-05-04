@@ -120,10 +120,10 @@ class FileCodeDriver(CodeDriver):
         sha1 = hashlib.md5()
         with open(absolute_filepath, "rb") as f:
             while True:
-                data = f.read(BUFF_SIZE)
-                if not data:
+                if data := f.read(BUFF_SIZE):
+                    sha1.update(data)
+                else:
                     break
-                sha1.update(data)
         return sha1.hexdigest()
 
     @staticmethod
@@ -136,9 +136,7 @@ class FileCodeDriver(CodeDriver):
         # TODO: otherwise initial commit will always fail because of no unstaged changes
         tracked_filepaths = self._get_tracked_files()
         commit_hash = self._calculate_commit_hash(tracked_filepaths)
-        if self.exists_ref(commit_hash):
-            return False
-        return True
+        return not self.exists_ref(commit_hash)
 
     def current_hash(self):
         self.check_unstaged_changes()
@@ -206,7 +204,7 @@ class FileCodeDriver(CodeDriver):
                                                      filehash)
                 shutil.copy2(absolute_filepath, new_absolute_filepath)
                 # 4) append a line into the new file for the commit hash with the following "filepath, filehash"
-                f.write(tracked_filepath + "," + filehash + "\n")
+                f.write(f"{tracked_filepath},{filehash}" + "\n")
         # Return commit hash if success else ERROR
         return commit_hash
 
@@ -278,9 +276,7 @@ class FileCodeDriver(CodeDriver):
         # List all files in code directory
         commit_hashes = self.list_refs()
         # Check if commit_id exists in the list
-        if commit_id in commit_hashes:
-            return True
-        return False
+        return commit_id in commit_hashes
 
     def delete_ref(self, commit_id):
         """Removes the commit hash file, but not the file references

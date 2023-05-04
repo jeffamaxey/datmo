@@ -62,9 +62,8 @@ class LocalDAL():
         if os.path.isdir(self.driver_options['connection_string']):
             self._is_initialized = True
             # set the driver so it is available
-            if not self.driver:
-                if self.driver_type == "blitzdb":
-                    self.driver = BlitzDBDALDriver(**self.driver_options)
+            if not self.driver and self.driver_type == "blitzdb":
+                self.driver = BlitzDBDALDriver(**self.driver_options)
             return self._is_initialized
         self._is_initialized = False
         return self._is_initialized
@@ -192,9 +191,8 @@ class LocalDAL():
         return UserMethods(self.driver)
 
     def init(self):
-        if not self.driver:
-            if self.driver_type == "blitzdb":
-                self.driver = BlitzDBDALDriver(**self.driver_options)
+        if not self.driver and self.driver_type == "blitzdb":
+            self.driver = BlitzDBDALDriver(**self.driver_options)
 
 
 class EntityMethodsCRUD(object):
@@ -223,10 +221,9 @@ class EntityMethodsCRUD(object):
         # latest_entity = self.query({"id": latest})
         # dict_obj['id'] = create_unique_hash(base_hash=latest_entity['id'])
         dict_obj['id'] = dict_obj['id'] if 'id' in dict_obj.keys() and dict_obj['id'] else \
-            create_unique_hash()
+                create_unique_hash()
         response = self.driver.set(self.collection, dict_obj)
-        entity_instance = self.entity_class(response)
-        return entity_instance
+        return self.entity_class(response)
 
     def update(self, datmo_entity):
         # translate datmo_entity to a standard dictionary (document) to be stored
@@ -238,18 +235,16 @@ class EntityMethodsCRUD(object):
             # Aggregate original object and new object into dict_obj var
             new_dict_obj = datmo_entity
             original_datmo_entity = self.get_by_id(datmo_entity['id'])
-            dict_obj = {}
-            for key, value in original_datmo_entity.to_dictionary().items():
-                if key in list(new_dict_obj):
-                    dict_obj[key] = new_dict_obj[key]
-                else:
-                    dict_obj[key] = getattr(original_datmo_entity, key)
-
+            dict_obj = {
+                key: new_dict_obj[key]
+                if key in list(new_dict_obj)
+                else getattr(original_datmo_entity, key)
+                for key, value in original_datmo_entity.to_dictionary().items()
+            }
         # set updated_at always
         dict_obj['updated_at'] = datetime.utcnow()
         response = self.driver.set(self.collection, dict_obj)
-        entity_instance = self.entity_class(response)
-        return entity_instance
+        return self.entity_class(response)
 
     def delete(self, entity_id):
         return self.driver.delete(self.collection, entity_id)

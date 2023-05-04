@@ -74,13 +74,14 @@ class CodeController(BaseController):
                 create_dict[required_arg] = self.code_driver.type
             elif required_arg == "commit_id":
                 create_dict[required_arg] = \
-                    self.code_driver.create_ref(commit_id=commit_id)
-                # If code object with commit id exists, return it
-                results = self.dal.code.query({
-                    "commit_id": create_dict[required_arg],
-                    "model_id": self.model.id
-                })
-                if results: return results[0]
+                        self.code_driver.create_ref(commit_id=commit_id)
+                if results := self.dal.code.query(
+                    {
+                        "commit_id": create_dict[required_arg],
+                        "model_id": self.model.id,
+                    }
+                ):
+                    return results[0]
             else:
                 raise NotImplementedError()
 
@@ -143,9 +144,7 @@ class CodeController(BaseController):
             code_objs = self.dal.code.query({"commit_id": code_commit_id})
         else:
             raise ArgumentError()
-        if code_objs:
-            return True
-        return False
+        return bool(code_objs)
 
     def check_unstaged_changes(self):
         """Checks if there exists any unstaged changes for the code in the project.

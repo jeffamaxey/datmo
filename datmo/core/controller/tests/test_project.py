@@ -38,7 +38,7 @@ from datmo.core.util.exceptions import ValidationFailed
 from datmo.core.util.misc_functions import check_docker_inactive, pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -219,13 +219,13 @@ class TestProjectController():
         config_filepath = os.path.join(self.snapshot_controller.home,
                                        "config.json")
         with open(config_filepath, "wb") as f:
-            f.write(to_bytes(str("{}")))
+            f.write(to_bytes("{}"))
 
         # Create stats
         stats_filepath = os.path.join(self.snapshot_controller.home,
                                       "stats.json")
         with open(stats_filepath, "wb") as f:
-            f.write(to_bytes(str("{}")))
+            f.write(to_bytes("{}"))
 
         input_dict = {
             "message":
@@ -247,7 +247,7 @@ class TestProjectController():
         first_snapshot = self.snapshot_controller.create(input_dict)
 
         status_dict, current_snapshot, latest_snapshot_user_generated, latest_snapshot_auto_generated, unstaged_code, unstaged_environment, unstaged_files = \
-            self.project_controller.status()
+                self.project_controller.status()
 
         assert status_dict
         assert isinstance(status_dict, dict)
@@ -283,7 +283,7 @@ class TestProjectController():
         self.environment_ids.append(after_environment_obj.id)
 
         status_dict, current_snapshot, latest_snapshot_user_generated, latest_snapshot_auto_generated, unstaged_code, unstaged_environment, unstaged_files = \
-            self.project_controller.status()
+                self.project_controller.status()
 
         assert status_dict
         assert isinstance(status_dict, dict)

@@ -33,8 +33,7 @@ from datmo.core.util.exceptions import EntityNotFound, UnstagedChanges
 class TestFileCollectionController():
     def setup_method(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -158,8 +157,7 @@ class TestFileCollectionController():
         except EntityNotFound:
             thrown = True
 
-        assert result == True and \
-            thrown == True
+        assert result == True and thrown
 
     def test_exists_file(self):
         self.project_controller.init("test6", "test description")

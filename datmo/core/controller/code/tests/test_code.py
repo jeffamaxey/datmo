@@ -32,8 +32,7 @@ from datmo.core.util.exceptions import (EntityNotFound, CommitDoesNotExist,
 class TestCodeController():
     def setup_method(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -51,7 +50,7 @@ class TestCodeController():
         definition_filepath = os.path.join(self.code_controller.home,
                                            "test.txt")
         with open(definition_filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Test failing with unstaged changes
         failed = False
@@ -84,7 +83,7 @@ class TestCodeController():
         definition_filepath = os.path.join(self.code_controller.home,
                                            "test.txt")
         with open(definition_filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Test passing with something to commit
         code_obj = self.code_controller.create()
@@ -112,7 +111,7 @@ class TestCodeController():
         definition_filepath = os.path.join(self.code_controller.home,
                                            "test.txt")
         with open(definition_filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Test passing with something to commit
         code_obj_1 = self.code_controller.create()
@@ -121,7 +120,7 @@ class TestCodeController():
         definition_filepath = os.path.join(self.code_controller.home,
                                            "test2.txt")
         with open(definition_filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Test passing with something to commit
         code_obj_2 = self.code_controller.create()
@@ -130,8 +129,8 @@ class TestCodeController():
         result = self.code_controller.list()
 
         assert len(result) == 2 and \
-            code_obj_1 in result and \
-            code_obj_2 in result
+                code_obj_1 in result and \
+                code_obj_2 in result
 
     def test_delete(self):
         self.project_controller.init("test5", "test description")
@@ -140,7 +139,7 @@ class TestCodeController():
         definition_filepath = os.path.join(self.code_controller.home,
                                            "test.txt")
         with open(definition_filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
 
         # Test passing with something to commit
         code_obj = self.code_controller.create()
@@ -155,8 +154,7 @@ class TestCodeController():
         except EntityNotFound:
             thrown = True
 
-        assert result == True and \
-            thrown == True
+        assert result == True and thrown
 
     def test_exists(self):
         # Test failure, not initialized
@@ -172,7 +170,7 @@ class TestCodeController():
         definition_filepath = os.path.join(self.code_controller.home,
                                            "test.txt")
         with open(definition_filepath, "wb") as f:
-            f.write(to_bytes(str("test")))
+            f.write(to_bytes("test"))
         code_obj = self.code_controller.create()
 
         # Check by code id

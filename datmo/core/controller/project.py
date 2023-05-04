@@ -47,11 +47,8 @@ class ProjectController(BaseController):
         -------
         bool
         """
-        is_new_model = False
         old_model = self.model
-        if not self.model:
-            is_new_model = True
-
+        is_new_model = not self.model
         try:
             # Always validate inputs to the init function
             validate("create_project", {

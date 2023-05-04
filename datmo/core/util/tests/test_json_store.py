@@ -33,8 +33,7 @@ from datmo.core.util.exceptions import FileIOError
 class TestJSONStore():
     def setup_class(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -50,9 +49,7 @@ class TestJSONStore():
     def test_save(self):
         storage = JSONStore(self.storage_file)
         storage.save('foobar', 'yep')
-        found_it = False
-        if 'foobar' in open(self.storage_file).read():
-            found_it = True
+        found_it = 'foobar' in open(self.storage_file).read()
         assert found_it
 
     def test_get_string(self):

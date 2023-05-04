@@ -38,8 +38,7 @@ class TestFileCodeDriver():
 
     def setup_method(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -181,8 +180,7 @@ class TestFileCodeDriver():
                 self.file_code_driver._code_filepath, tracked_filepath)
             assert os.path.isdir(absolute_dirpath)
             assert len(os.listdir(absolute_dirpath)) == 1
-            file_line_str = tracked_filepath + "," + os.listdir(
-                absolute_dirpath)[0]
+            file_line_str = f"{tracked_filepath},{os.listdir(absolute_dirpath)[0]}"
             assert file_line_str in open(commit_filepath).read()
 
     def test_current_ref(self):

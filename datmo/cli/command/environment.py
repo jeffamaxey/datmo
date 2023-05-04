@@ -60,9 +60,12 @@ class EnvironmentCommand(ProjectCommand):
             return environment_obj
         except EnvironmentDoesNotExist:
             self.cli_helper.echo(
-                __("error", "cli.environment.setup.argument",
-                   "%s:%s-%s" % (environment_framework, environment_type,
-                                 environment_language)))
+                __(
+                    "error",
+                    "cli.environment.setup.argument",
+                    f"{environment_framework}:{environment_type}-{environment_language}",
+                )
+            )
 
     @Helper.notify_no_project_found
     def create(self, **kwargs):
@@ -87,9 +90,9 @@ class EnvironmentCommand(ProjectCommand):
         environment_id = kwargs.get('id')
         name = kwargs.get('name', None)
         description = kwargs.get("description", None)
-        result = self.environment_controller.update(
-            environment_id, name=name, description=description)
-        return result
+        return self.environment_controller.update(
+            environment_id, name=name, description=description
+        )
 
     @Helper.notify_environment_active(EnvironmentController)
     @Helper.notify_no_project_found
@@ -129,7 +132,8 @@ class EnvironmentCommand(ProjectCommand):
                     current_time - epoch_time).total_seconds() * 1000.0
                 download_path = os.path.join(
                     self.environment_controller.home,
-                    "environment_ls_" + str(current_time_unix_time_ms))
+                    f"environment_ls_{str(current_time_unix_time_ms)}",
+                )
             self.cli_helper.print_items(
                 header_list,
                 item_dict_list,

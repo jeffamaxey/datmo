@@ -23,8 +23,7 @@ class TestBlitzDBDALDriverInit():
 
     def setup_class(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -50,8 +49,7 @@ class TestBlitzDBDALDriver():
 
     def setup_class(self):
         # provide mountable tmp directory for docker
-        tempfile.tempdir = "/tmp" if not platform.system(
-        ) == "Windows" else None
+        tempfile.tempdir = "/tmp" if platform.system( ) != "Windows" else None
         test_datmo_dir = os.environ.get('TEST_DATMO_DIR',
                                         tempfile.gettempdir())
         self.temp_dir = tempfile.mkdtemp(dir=test_datmo_dir)
@@ -140,7 +138,7 @@ class TestBlitzDBDALDriver():
         random_id = create_unique_hash()
         test_obj = {"random_id": random_id}
         self.database.set(self.collection, test_obj)
-        wildcard_query_obj = {"random_id": {"$regex": "%s" % random_id[:10]}}
+        wildcard_query_obj = {"random_id": {"$regex": f"{random_id[:10]}"}}
         results = self.database.query(self.collection, wildcard_query_obj)
         assert len(results) == 1
         assert results[0].get('random_id') == random_id
@@ -172,7 +170,7 @@ class TestBlitzDBDALDriver():
         """
 
         test_obj = {"car": "baz"}
-        collection_2 = self.collection + '_2'
+        collection_2 = f'{self.collection}_2'
         thrown = False
         try:
             result = self.database.set(collection_2, test_obj)
@@ -596,14 +594,10 @@ class TestBlitzDBDALDriver():
     def test_set_update_key_to_same_value(self):
         self.database.set("snapshot", {"id": 1, "key": "hello"})
         self.database.set("snapshot", {"id": 2, "key": "there"})
-        items = [
-            item for item in self.database.query("snapshot", {"key": "there"})
-        ]
+        items = list(self.database.query("snapshot", {"key": "there"}))
         next_item = items[0]
 
-        items = [
-            item for item in self.database.query("snapshot", {"key": "hello"})
-        ]
+        items = list(self.database.query("snapshot", {"key": "hello"}))
         current_item = items[0]
         current_item['key'] = next_item['key']
         self.database.set("snapshot", current_item)

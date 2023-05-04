@@ -39,7 +39,7 @@ from datmo.config import Config
 from datmo.core.util.exceptions import EnvironmentDoesNotExist
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -230,7 +230,7 @@ class TestEnvironmentCommand():
         random_text = str(uuid.uuid1())
         with open(definition_filepath, "wb") as f:
             f.write(to_bytes("FROM python:3.5-alpine" + "\n"))
-            f.write(to_bytes(str("RUN echo " + random_text)))
+            f.write(to_bytes(str(f"RUN echo {random_text}")))
 
         self.environment_command.parse([
             "environment", "create", "--name", "test", "--description",
@@ -254,7 +254,7 @@ class TestEnvironmentCommand():
         random_text = str(uuid.uuid1())
         with open(definition_filepath, "wb") as f:
             f.write(to_bytes("FROM python:3.5-alpine" + "\n"))
-            f.write(to_bytes(str("RUN echo " + random_text)))
+            f.write(to_bytes(str(f"RUN echo {random_text}")))
 
         self.environment_command.parse(
             ["environment", "create", "--paths", definition_filepath])
@@ -269,7 +269,7 @@ class TestEnvironmentCommand():
         random_text = str(uuid.uuid1())
         with open(definition_filepath, "wb") as f:
             f.write(to_bytes("FROM python:3.5-alpine" + "\n"))
-            f.write(to_bytes(str("RUN echo " + random_text)))
+            f.write(to_bytes(str(f"RUN echo {random_text}")))
 
         self.environment_command.parse(["environment", "create"])
         result = self.environment_command.execute()

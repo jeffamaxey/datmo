@@ -41,7 +41,7 @@ from datmo.core.util.exceptions import UnrecognizedCLIArgument
 from datmo.core.util.misc_functions import pytest_docker_environment_failed_instantiation
 
 # provide mountable tmp directory for docker
-tempfile.tempdir = "/tmp" if not platform.system() == "Windows" else None
+tempfile.tempdir = "/tmp" if platform.system() != "Windows" else None
 test_datmo_dir = os.environ.get('TEST_DATMO_DIR', tempfile.gettempdir())
 
 
@@ -71,7 +71,7 @@ class TestProjectCommand():
             self.project_command.project_controller.home)
         assert result
         assert result.name == default_name
-        assert result.description == None
+        assert result.description is None
         # Ensure environment is correct
         definition_filepath = os.path.join(
             self.project_command.project_controller.environment_driver.
@@ -304,8 +304,8 @@ class TestProjectCommand():
         # Create a snapshot
         self.snapshot_command = SnapshotCommand(self.cli_helper)
         with open(os.path.join(self.project_command.home, "test.py"),
-                  "wb") as f:
-            f.write(to_bytes(str("import xgboost")))
+                      "wb") as f:
+            f.write(to_bytes("import xgboost"))
         self.snapshot_command.parse(
             ["snapshot", "create", "--message", "test"])
         snapshot_obj = self.snapshot_command.execute()
@@ -357,7 +357,7 @@ class TestProjectCommand():
         self.project_command.parse(["status"])
         result = self.project_command.execute()
         status_dict, current_snapshot, latest_snapshot_user_generated, latest_snapshot_auto_generated, unstaged_code, unstaged_environment, unstaged_files = \
-            result
+                result
 
         assert status_dict
         assert isinstance(status_dict, dict)
@@ -380,8 +380,8 @@ class TestProjectCommand():
         # Create a snapshot
         self.snapshot_command = SnapshotCommand(self.cli_helper)
         with open(os.path.join(self.project_command.home, "test.py"),
-                  "wb") as f:
-            f.write(to_bytes(str("import xgboost")))
+                      "wb") as f:
+            f.write(to_bytes("import xgboost"))
         self.snapshot_command.parse(
             ["snapshot", "create", "--message", "test"])
         first_snapshot = self.snapshot_command.execute()
@@ -404,7 +404,7 @@ class TestProjectCommand():
         self.project_command.parse(["status"])
         result = self.project_command.execute()
         status_dict, current_snapshot, latest_snapshot_user_generated, latest_snapshot_auto_generated, unstaged_code, unstaged_environment, unstaged_files = \
-            result
+                result
 
         assert status_dict
         assert isinstance(status_dict, dict)
@@ -439,8 +439,8 @@ class TestProjectCommand():
 
         # Create a user generated snapshot after some changes
         with open(os.path.join(self.project_command.home, "new.py"),
-                  "wb") as f:
-            f.write(to_bytes(str("import xgboost")))
+                      "wb") as f:
+            f.write(to_bytes("import xgboost"))
         self.snapshot_command.parse(
             ["snapshot", "create", "--message", "test"])
         new_snapshot = self.snapshot_command.execute()
@@ -450,7 +450,7 @@ class TestProjectCommand():
         self.project_command.parse(["status"])
         result = self.project_command.execute()
         status_dict, current_snapshot, latest_snapshot_user_generated, latest_snapshot_auto_generated, unstaged_code, unstaged_environment, unstaged_files = \
-            result
+                result
 
         assert status_dict
         assert isinstance(status_dict, dict)
@@ -489,7 +489,7 @@ class TestProjectCommand():
         self.project_command.parse(["status"])
         result = self.project_command.execute()
         status_dict, current_snapshot, latest_snapshot_user_generated, latest_snapshot_auto_generated, unstaged_code, unstaged_environment, unstaged_files = \
-            result
+                result
 
         assert status_dict
         assert isinstance(status_dict, dict)

@@ -57,17 +57,13 @@ class LocalFileDriver(FileDriver):
                    dst_dirpath))
         _, filename = os.path.split(filepath)
         dst_filepath = os.path.join(dst_dirpath, filename)
-        number_of_items = glob.glob(dst_filepath)
-        if number_of_items:
-            filepath_without_ext = os.path.splitext(dst_filepath)[0]
-            extension = os.path.splitext(dst_filepath)[1]
-            number_of_items = len(glob.glob(filepath_without_ext + '*'))
-            new_filepath = filepath_without_ext + "_" + str(
-                number_of_items - 1)
-            new_filepath_with_ext = new_filepath + extension
-            return new_filepath_with_ext
-        else:
+        if not (number_of_items := glob.glob(dst_filepath)):
             return dst_filepath
+        filepath_without_ext = os.path.splitext(dst_filepath)[0]
+        extension = os.path.splitext(dst_filepath)[1]
+        number_of_items = len(glob.glob(f'{filepath_without_ext}*'))
+        new_filepath = f"{filepath_without_ext}_{str(number_of_items - 1)}"
+        return new_filepath + extension
 
     @staticmethod
     def copytree(src_dirpath, dst_dirpath, symlinks=False, ignore=None):
@@ -109,12 +105,15 @@ class LocalFileDriver(FileDriver):
 
     @property
     def is_initialized(self):
-        if self.exists_hidden_datmo_file_structure():
-            if os.path.isdir(
-                    os.path.join(self.datmo_directory, "collections",
-                                 "d41d8cd98f00b204e9800998ecf8427e")):
-                self._is_initialized = True
-                return self._is_initialized
+        if self.exists_hidden_datmo_file_structure() and os.path.isdir(
+            os.path.join(
+                self.datmo_directory,
+                "collections",
+                "d41d8cd98f00b204e9800998ecf8427e",
+            )
+        ):
+            self._is_initialized = True
+            return self._is_initialized
         self._is_initialized = False
         return self._is_initialized
 
@@ -156,20 +155,19 @@ class LocalFileDriver(FileDriver):
         filepath = os.path.join(self.root, relative_path)
         if os.path.exists(filepath):
             os.utime(filepath, None)
+        elif directory:
+            os.makedirs(filepath)
         else:
-            if directory:
-                os.makedirs(filepath)
-            else:
-                with open(filepath, "ab"):
-                    os.utime(filepath, None)
+            with open(filepath, "ab"):
+                os.utime(filepath, None)
         return filepath
 
     def exists(self, relative_path, directory=False):
         filepath = os.path.join(self.root, relative_path)
         if directory:
-            return True if os.path.isdir(filepath) else False
+            return bool(os.path.isdir(filepath))
         else:
-            return True if os.path.isfile(filepath) else False
+            return bool(os.path.isfile(filepath))
 
     def get(self, relative_path, mode="r", directory=False):
         filepath = os.path.join(self.root, relative_path)
@@ -180,9 +178,9 @@ class LocalFileDriver(FileDriver):
             absolute_filepaths = []
             for dirname, _, filenames in os.walk(filepath):
                 # print path to all filenames.
-                for filename in filenames:
-                    absolute_filepaths.append(os.path.join(dirname, filename))
-
+                absolute_filepaths.extend(
+                    os.path.join(dirname, filename) for filename in filenames
+                )
             # Return a list of file objects
             return [
                 open(absolute_filepath, mode)
@@ -290,10 +288,10 @@ class LocalFileDriver(FileDriver):
         sha1 = hashlib.md5()
         with open(absolute_filepath, "rb") as f:
             while True:
-                data = f.read(BUFF_SIZE)
-                if not data:
+                if data := f.read(BUFF_SIZE):
+                    sha1.update(data)
+                else:
                     break
-                sha1.update(data)
         return sha1.hexdigest()
 
     @staticmethod
@@ -387,8 +385,7 @@ class LocalFileDriver(FileDriver):
                 __("error",
                    "controller.file.driver.local.list_file_collections"))
         files_path = os.path.join(self.datmo_directory, "files")
-        files_list = os.listdir(files_path)
-        return files_list
+        return os.listdir(files_path)
 
     # Other functions for collections
     def create_collections_dir(self):
@@ -423,8 +420,7 @@ class LocalFileDriver(FileDriver):
                 __("error",
                    "controller.file.driver.local.list_file_collections"))
         collections_path = os.path.join(self.datmo_directory, "collections")
-        collections_list = os.listdir(collections_path)
-        return collections_list
+        return os.listdir(collections_path)
 
     # Overall Hidden Datmo file structure
     def create_hidden_datmo_file_structure(self):
